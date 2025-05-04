@@ -12,6 +12,13 @@
                     {{ __("You're logged in!") }}
                 </div>
             </div>
+
+            <!-- Tambahkan Tombol atau Link ke Produk -->
+            <div class="mt-6">
+                <a href="{{ route('admin.products.index') }}" class="inline-block px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600">
+                    Go to Product Management
+                </a>
+            </div>
         </div>
     </div>
 </x-app-layout>
