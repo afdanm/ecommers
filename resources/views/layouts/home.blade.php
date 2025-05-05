@@ -19,7 +19,7 @@
             
             <div class="hidden md:flex items-center space-x-8">
                 <a href="{{ route('home') }}" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
-                <a href="{{ route('admin.products.index') }}" class="text-gray-700 hover:text-blue-600 font-medium">Shop</a>
+                <a href="{{ route('products.list') }}" class="text-gray-700 hover:text-blue-600 font-medium">Shop</a>
                 <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">Categories</a>
                 <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">About</a>
             </div>

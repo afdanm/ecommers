@@ -5,11 +5,11 @@
 
         <!-- Banner Promo -->
         <div class="relative bg-blue-500 text-white text-center py-16 mb-12 rounded-lg overflow-hidden shadow-lg">
-            <img src="{{ asset('storage/banner-image.jpg') }}" alt="Banner Promo" class="absolute inset-0 w-full h-full object-cover opacity-30">
-            <div class="relative z-10">
+            {{-- <img src="{{ asset('storage/banner-image.jpg') }}" alt="Banner Promo" class="absolute inset-0 w-full h-full object-cover opacity-30">
+            <div class="relative z-10"> --}}
                 <h1 class="text-5xl font-extrabold mb-4 animate__animated animate__fadeIn">Promo Spesial! Diskon hingga 50%</h1>
                 <p class="text-xl mb-6 animate__animated animate__fadeIn animate__delay-1s">Jangan lewatkan penawaran menarik ini. Belanja sekarang!</p>
-                <a href="{{ route('admin.products.index') }}" class="bg-yellow-500 text-black py-3 px-8 rounded-full text-lg font-semibold hover:bg-yellow-400 transition duration-300 ease-in-out transform hover:scale-105 animate__animated animate__fadeIn animate__delay-2s">
+                <a href="{{ route('products.list') }}" class="bg-yellow-500 text-black py-3 px-8 rounded-full text-lg font-semibold hover:bg-yellow-400 transition duration-300 ease-in-out transform hover:scale-105 animate__animated animate__fadeIn animate__delay-2s">
                     Belanja Sekarang
                 </a>
             </div>

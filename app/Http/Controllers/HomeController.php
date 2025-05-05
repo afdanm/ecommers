@@ -14,4 +14,13 @@ class HomeController extends Controller
         // Kirim data produk ke view beranda
         return view('home', compact('products'));
     }
+
+    public function listProducts()
+{
+    // Ambil semua produk yang ready
+    $products = Product::where('status', 'ready')->get();
+
+    // Kirim ke view 'products.index'
+    return view('products.index', compact('products'));
+}
 }

@@ -1,5 +1,6 @@
 <?php
 
+// Migration untuk membuat tabel products
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,16 +14,17 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('name');  // pastikan kolom name ada di sini
+            $table->string('name');
             $table->text('description');
-            $table->decimal('price', 10, 2);  // harga produk
-            $table->string('category');  // kategori produk
-            $table->integer('stock');  // stok produk
-            $table->string('status');  // status produk, misalnya 'ready' atau 'not ready'
-            $table->string('image');  // gambar produk
+            $table->decimal('price', 10, 2);
+            $table->string('category');
+            $table->integer('stock');
+            $table->string('status');
+            $table->string('image');
+            $table->string('brand')->nullable();  // Kolom brand
+            $table->decimal('rating', 2, 1)->default(0.0);  // Kolom rating
             $table->timestamps();
         });
-        
     }
 
     /**

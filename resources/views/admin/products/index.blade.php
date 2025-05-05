@@ -1,18 +1,13 @@
-<x-app-layout>
+@extends('layouts.admin')
 
+@section('title', 'Manajemen Produk') <!-- Menambahkan title khusus untuk halaman ini -->
+
+@section('content')
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Manajemen Produk</h2>
-        <div class="flex gap-2">
-            <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">Kembali</a>
-            <a href="{{ route('admin.products.create') }}" class="btn btn-primary">Tambah Produk</a>
-        </div>
+        <a href="{{ route('admin.products.create') }}" class="btn btn-primary px-4 py-2 rounded bg-blue-500 text-white">Tambah
+            Produk</a> <!-- Tombol tambah produk -->
     </div>
-
-    @if(session('success'))
-        <div class="alert alert-success mb-4">
-            {{ session('success') }}
-        </div>
-    @endif
 
     @if($products->isEmpty())
         <p class="text-gray-500">Belum ada produk yang ditambahkan.</p>
@@ -59,5 +54,4 @@
         </tbody>
     </table>
     @endif
-
-</x-app-layout>
+@endsection
