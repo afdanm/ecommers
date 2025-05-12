@@ -1,76 +1,123 @@
-<?php 
+<?php
 
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\CartI;
+use App\Models\Cart;
 use App\Models\Transaction;
+use App\Models\Product;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Midtrans\Snap;
+use Illuminate\Support\Facades\DB;
 use Midtrans\Config;
+use Midtrans\Snap;
 
 class CheckoutController extends Controller
-{public function index()
+{
+/*************  ✨ Windsurf Command ⭐  *************/
+    /**
+     * Display the checkout page for the user.
+     *
+     * @return \Illuminate\View\View
+     */
+/*******  14470663-30d4-4d99-a8c0-ec2aa59b19d9  *******/    public function index()
     {
-        $items = CartItem::with('product')->where('user_id', auth()->id())->get();
-        $total = $items->sum(fn($item) => $item->product->price * $item->quantity);
-        return view('user.checkout.index', compact('items', 'total'));
+        $carts = Cart::with('product')->where('user_id', Auth::id())->get();
+        
+        // Validasi stok sebelum checkout
+        foreach ($carts as $cart) {
+            if ($cart->quantity > $cart->product->stock) {
+                return redirect()->route('cart.index')
+                    ->with('error', 'Stok produk "' . $cart->product->name . '" tidak mencukupi. Stok tersedia: ' . $cart->product->stock);
+            }
+        }
+
+        $total = $carts->sum(fn($c) => $c->product->price * $c->quantity);
+
+        if ($carts->isEmpty() || $total <= 0) {
+            return redirect()->route('cart.index')->with('error', 'Keranjang kosong atau total tidak valid.');
+        }
+
+        return view('user.checkout.index', compact('carts', 'total'));
     }
-    
+
     public function process(Request $request)
     {
-        \Midtrans\Config::$serverKey = config('midtrans.server_key');
-        \Midtrans\Config::$isProduction = false;
-    
-        $order_id = 'TOKOKU-' . time();
-        $total_price = CartItem::with('product')->where('user_id', auth()->id())
-            ->get()
-            ->sum(fn($item) => $item->product->price * $item->quantity);
-    
-        $params = [
-            'transaction_details' => [
-                'order_id' => $order_id,
-                'gross_amount' => $total_price,
-            ],
-            'customer_details' => [
-                'first_name' => auth()->user()->name,
-                'email' => auth()->user()->email,
-            ]
-        ];
-    
-        $snapToken = \Midtrans\Snap::getSnapToken($params);
-    
-        return view('user.checkout.payment', compact('snapToken', 'order_id'));
+        DB::beginTransaction();
+        
+        try {
+            $carts = Cart::with('product')->where('user_id', Auth::id())->get();
+            $total = $carts->sum(fn($c) => $c->product->price * $c->quantity);
+
+            if ($carts->isEmpty() || $total <= 0) {
+                return redirect()->route('cart.index')->with('error', 'Keranjang kosong atau total tidak valid.');
+            }
+
+            // Validasi stok lagi sebelum proses
+            foreach ($carts as $cart) {
+                if ($cart->quantity > $cart->product->stock) {
+                    return redirect()->route('cart.index')
+                        ->with('error', 'Stok produk "' . $cart->product->name . '" tidak mencukupi. Stok tersedia: ' . $cart->product->stock);
+                }
+            }
+
+            // Membuat transaksi baru
+            $transaction = Transaction::create([
+                'user_id' => Auth::id(),
+                'total_price' => $total,
+                'status' => 'pending',
+            ]);
+
+            // Kurangi stok produk
+            foreach ($carts as $cart) {
+                $product = $cart->product;
+                $product->stock -= $cart->quantity;
+                $product->save();
+            }
+
+            // Midtrans Config
+            Config::$serverKey = env('MIDTRANS_SERVER_KEY');
+            Config::$isProduction = false;
+            Config::$isSanitized = true;
+            Config::$is3ds = true;
+
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $transaction->id . '-' . time(),
+                    'gross_amount' => $total,
+                ],
+                'customer_details' => [
+                    'first_name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                ]
+            ];
+
+            $snapToken = Snap::getSnapToken($params);
+
+            // Simpan order_id dari Midtrans
+            $transaction->update(['midtrans_order_id' => $params['transaction_details']['order_id']]);
+
+            // Menghapus item dari keranjang setelah transaksi berhasil
+            Cart::where('user_id', Auth::id())->delete();
+
+            DB::commit();
+
+            // Arahkan ke halaman pembayaran setelah sukses
+            return view('user.checkout.payment', compact('snapToken', 'transaction'));
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('cart.index')->with('error', 'Terjadi kesalahan saat proses checkout: ' . $e->getMessage());
+        }
     }
-    
-    public function success(Request $request)
-{
-    $orderId = $request->query('order_id');
-    $userId = auth()->id();
 
-    $cartItems = CartItem::with('product')->where('user_id', $userId)->get();
-    $totalPrice = $cartItems->sum(fn($item) => $item->product->price * $item->quantity);
-
-    $order = Order::create([
-        'user_id' => $userId,
-        'total_price' => $totalPrice,
-        'status' => 'pending',
-        'purchase_method' => session('purchase_method', 'pickup'),
-        'delivery_address' => session('delivery_address'),
-        'pickup_store' => null,
-    ]);
-
-    foreach ($cartItems as $item) {
-        $order->items()->create([
-            'product_id' => $item->product_id,
-            'quantity' => $item->quantity,
-            'price' => $item->product->price,
-        ]);
+    public function success()
+    {
+        return view('user.checkout.success');
     }
 
-    CartItem::where('user_id', $userId)->delete();
-
-    return view('user.checkout.success', compact('order'));
-}
-
+    public function error()
+    {
+        return view('user.checkout.error');
+    }
 }

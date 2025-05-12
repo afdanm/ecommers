@@ -5,6 +5,10 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Cart;
+use App\Models\Product;
+use App\Models\Transaction;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -21,8 +25,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         View::composer('*', function ($view) {
-            $cart = Session::get('cart', []);
-            $cartCount = array_sum(array_column($cart, 'quantity'));
+            $cartCount = 0;
+            if (Auth::check()) {
+                $cartCount = Cart::where('user_id', Auth::id())->count();
+            }
             $view->with('cartCount', $cartCount);
         });
     }

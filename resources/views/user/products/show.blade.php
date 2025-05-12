@@ -12,6 +12,7 @@
             <h1 class="text-3xl font-bold mb-2">{{ $product->name }}</h1>
             <p class="text-gray-600 mb-1">Kategori: <strong>{{ $product->category->name }}</strong></p>
             <p class="text-green-600 text-2xl font-bold mb-4">Rp {{ number_format($product->price) }}</p>
+            <p class="mb-2">Stok: <strong>{{ $product->stock }}</strong></p>
             <p class="mb-4">{{ $product->description }}</p>
 
             {{-- Add to Cart / Login Modal --}}
@@ -19,14 +20,19 @@
                 <form action="{{ route('cart.add', $product->id) }}" method="POST" class="flex items-center space-x-4">
                     @csrf
                     <div class="flex items-center border border-gray-300 rounded">
-                        <button type="button" class="px-3 py-1 decrement-btn">-</button>
-                        <input type="number" name="quantity" value="1" min="1" class="w-12 text-center border-x border-gray-300 py-1">
-                        <button type="button" class="px-3 py-1 increment-btn">+</button>
+                        <button type="button" class="px-3 py-1 decrement-btn" {{ $product->stock <= 1 ? 'disabled' : '' }}>-</button>
+                        <input type="number" name="qty" value="1" min="1" max="{{ $product->stock }}" class="w-12 text-center border-x border-gray-300 py-1" {{ $product->stock <= 0 ? 'disabled' : '' }}>
+                        <button type="button" class="px-3 py-1 increment-btn" {{ $product->stock <= 1 ? 'disabled' : '' }}>+</button>
                     </div>
-                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" {{ $product->stock <= 0 ? 'disabled' : '' }}>
                         Masukkan ke Keranjang
                     </button>
                 </form>
+                @if(session('error'))
+                <div class="mt-4 text-red-500">
+                    {{ session('error') }}
+                </div>
+                @endif
             @else
                 <button onclick="openLoginModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
                     Masukkan ke Keranjang
@@ -36,7 +42,7 @@
     </div>
 </div>
 
-{{-- Modal Box (Tampil kalau user belum login) --}}
+{{-- Login Modal --}}
 <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
     <div class="bg-white rounded p-6 max-w-sm text-center">
         <h2 class="text-xl font-bold mb-4">Silakan Login atau Register</h2>
@@ -47,19 +53,21 @@
     </div>
 </div>
 
-{{-- Script Quantity & Modal --}}
 <script>
-    // Quantity Button
+    // Quantity Button Handler
     document.querySelectorAll('.increment-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const input = this.parentNode.querySelector('input');
-            input.value = parseInt(input.value) + 1;
+            const input = this.parentNode.querySelector('input[name="qty"]');
+            const max = parseInt(input.max);
+            if (parseInt(input.value) < max) {
+                input.value = parseInt(input.value) + 1;
+            }
         });
     });
 
     document.querySelectorAll('.decrement-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const input = this.parentNode.querySelector('input');
+            const input = this.parentNode.querySelector('input[name="qty"]');
             if (parseInt(input.value) > 1) {
                 input.value = parseInt(input.value) - 1;
             }

@@ -13,44 +13,47 @@
 
 <body class="font-sans bg-gray-50">
 
-    <!-- Navbar -->
-    <nav class="bg-white shadow-lg py-4 sticky top-0 z-50">
-        <div class="container mx-auto px-4 flex justify-between items-center">
-            <a href="{{ route('home') }}" class="text-2xl font-bold text-blue-600 flex items-center">
-                <i class="fas fa-store mr-2"></i> MiniStore
+<!-- Navbar -->
+<nav class="bg-white shadow-lg py-4 sticky top-0 z-50">
+    <div class="container mx-auto px-4 flex justify-between items-center">
+        <a href="{{ route('home') }}" class="text-2xl font-bold text-blue-600 flex items-center">
+            <i class="fas fa-store mr-2"></i> MiniStore
+        </a>
+
+        <div class="hidden md:flex items-center space-x-8">
+            <a href="{{ route('home') }}" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
+            <a href="{{ route('products.list') }}" class="text-gray-700 hover:text-blue-600 font-medium">Shop</a>
+            <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">Categories</a>
+            <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">About</a>
+        </div>
+
+        <div class="flex items-center space-x-6">
+            <a href="#" class="text-gray-700 hover:text-blue-600"><i class="fas fa-search text-lg"></i></a>
+            <a href="{{ route('cart.index') }}" class="text-gray-700 hover:text-blue-600 relative">
+                <i class="fas fa-shopping-cart text-lg"></i>
+                @if($cartCount > 0)
+                    <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {{ $cartCount }}
+                    </span>
+                @endif
             </a>
 
-            <div class="hidden md:flex items-center space-x-8">
-                <a href="{{ route('home') }}" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
-                <a href="{{ route('products.list') }}" class="text-gray-700 hover:text-blue-600 font-medium">Shop</a>
-                <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">Categories</a>
-                <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">About</a>
-            </div>
-
-            <div class="flex items-center space-x-6">
-                <a href="#" class="text-gray-700 hover:text-blue-600"><i class="fas fa-search text-lg"></i></a>
-                {{-- <a href="{{ route('cart.index') }}" class="text-gray-700 hover:text-blue-600 relative">
-                    <i class="fas fa-shopping-cart text-lg"></i>
-                    @if($cartCount > 0)
-                        <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                            {{ $cartCount }}
-                        </span>
-                    @endif
-                </a> --}}
-                
-                @auth
-                    <a href="{{ route('profile.index') }}" class="text-gray-700 hover:text-blue-600"><i class="fas fa-user-circle text-lg"></i></a>
-                    <form method="POST" action="{{ route('logout') }}" class="inline">
-                        @csrf
-                        <button type="submit" class="text-blue-600 underline">Logout</button>
-                    </form>
-                @else
-                    <a href="{{ route('login') }}" class="text-gray-700 hover:text-blue-600">Login</a>
-                    <a href="{{ route('register') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Register</a>
-                @endauth
-            </div>
+            @auth
+                <a href="{{ route('profile.index') }}" class="text-gray-700 hover:text-blue-600"><i class="fas fa-user-circle text-lg"></i></a>
+                <!-- Transaction History link for logged-in users -->
+                <a href="{{ route('transaction-history.index') }}" class="text-gray-700 hover:text-blue-600">Transaction History</a>
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="text-blue-600 underline">Logout</button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="text-gray-700 hover:text-blue-600">Login</a>
+                <a href="{{ route('register') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Register</a>
+            @endauth
         </div>
-    </nav>
+    </div>
+</nav>
+
 
     <!-- Main Content -->
     <main>
