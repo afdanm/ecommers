@@ -1,80 +1,88 @@
 @extends('layouts.admin')
 
-@section('title', 'Tambah Produk')
-
 @section('content')
-    <h2 class="text-2xl font-bold mb-4">Tambah Produk</h2>
+    <h1 class="text-2xl font-semibold mb-4">Tambah Produk</h1>
 
-    <a href="{{ route('admin.products.index') }}" class="btn btn-secondary mb-4">Kembali</a>
+    <!-- Menampilkan pesan sukses jika ada -->
+    @if(Session::has('success'))
+        <div class="bg-green-500 text-white p-4 rounded-md mb-4">
+            {{ Session::get('success') }}
+        </div>
+    @endif
 
+    <!-- Form untuk menambah produk -->
     <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
+        <!-- Nama Produk -->
         <div class="mb-4">
             <label for="name" class="block text-sm font-medium text-gray-700">Nama Produk</label>
-            <input type="text" name="name" id="name" value="{{ old('name') }}"
-                class="w-full mt-1 border-gray-300 rounded-md shadow-sm" required>
+            <input type="text" id="name" name="name" class="mt-1 p-2 w-full border border-gray-300 rounded-md"
+                   value="{{ old('name') }}" required>
             @error('name')
-                <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+                <span class="text-red-500 text-sm">{{ $message }}</span>
             @enderror
         </div>
 
+        <!-- Deskripsi Produk -->
         <div class="mb-4">
-            <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi</label>
-            <textarea name="description" id="description" rows="4" class="w-full mt-1 border-gray-300 rounded-md shadow-sm"
-                required>{{ old('description') }}</textarea>
+            <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi Produk</label>
+            <textarea id="description" name="description" rows="4" class="mt-1 p-2 w-full border border-gray-300 rounded-md" required>{{ old('description') }}</textarea>
             @error('description')
-                <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+                <span class="text-red-500 text-sm">{{ $message }}</span>
             @enderror
         </div>
 
+        <!-- Harga Produk -->
         <div class="mb-4">
-            <label for="price" class="block text-sm font-medium text-gray-700">Harga</label>
-            <input type="number" name="price" id="price" value="{{ old('price') }}"
-                class="w-full mt-1 border-gray-300 rounded-md shadow-sm" required>
+            <label for="price" class="block text-sm font-medium text-gray-700">Harga Produk</label>
+            <input type="number" id="price" name="price" class="mt-1 p-2 w-full border border-gray-300 rounded-md"
+                   value="{{ old('price') }}" required>
             @error('price')
-                <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+                <span class="text-red-500 text-sm">{{ $message }}</span>
             @enderror
         </div>
 
+        <!-- Stok Produk -->
         <div class="mb-4">
-            <label for="category" class="block text-sm font-medium text-gray-700">Kategori</label>
-            <select name="category" id="category" class="w-full mt-1 border-gray-300 rounded-md shadow-sm" required>
-                <option value="baju">Baju</option>
-                <option value="celana">Celana</option>
-                <option value="sepatu">Sepatu</option>
-                <option value="kaos_kaki">Kaos Kaki</option>
-                <option value="aksesoris">Aksesoris</option>
-                <option value="tas">Tas</option>
-            </select>
-        </div>
-
-
-        <div class="mb-4">
-            <label for="stock" class="block text-sm font-medium text-gray-700">Stok</label>
-            <input type="number" name="stock" id="stock" value="{{ old('stock') }}"
-                class="w-full mt-1 border-gray-300 rounded-md shadow-sm" required>
+            <label for="stock" class="block text-sm font-medium text-gray-700">Stok Produk</label>
+            <input type="number" id="stock" name="stock" class="mt-1 p-2 w-full border border-gray-300 rounded-md"
+                   value="{{ old('stock') }}" required>
             @error('stock')
-                <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+                <span class="text-red-500 text-sm">{{ $message }}</span>
             @enderror
         </div>
 
+        <!-- Kategori Produk -->
         <div class="mb-4">
-            <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-            <select name="status" id="status" class="w-full mt-1 border-gray-300 rounded-md shadow-sm" required>
-                <option value="ready">Ready</option>
-                <option value="out_of_stock">Out of Stock</option>
+            <label for="category_id" class="block text-sm font-medium text-gray-700">Kategori Produk</label>
+            <select id="category_id" name="category_id" class="mt-1 p-2 w-full border border-gray-300 rounded-md" required>
+                <option value="">Pilih Kategori</option>
+                @foreach($categories as $category)
+                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                        {{ $category->name }}
+                    </option>
+                @endforeach
             </select>
-        </div>
-
-        <div class="mb-4">
-            <label for="image" class="block text-sm font-medium text-gray-700">Gambar</label>
-            <input type="file" name="image" id="image" class="w-full mt-1 border-gray-300 rounded-md shadow-sm">
-            @error('image')
-                <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+            @error('category_id')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
             @enderror
         </div>
 
-        <button type="submit" class="btn btn-primary">Simpan Produk</button>
+        <!-- Foto Produk -->
+        <div class="mb-4">
+            <label for="photo" class="block text-sm font-medium text-gray-700">Foto Produk</label>
+            <input type="file" id="photo" name="photo" class="mt-1 p-2 w-full border border-gray-300 rounded-md">
+            @error('photo')
+                <span class="text-red-500 text-sm">{{ $message }}</span>
+            @enderror
+        </div>
+
+        <!-- Tombol Submit -->
+        <div class="mb-4">
+            <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md">
+                Simpan Produk
+            </button>
+        </div>
     </form>
 @endsection

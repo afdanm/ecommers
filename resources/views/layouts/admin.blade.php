@@ -14,18 +14,34 @@
         <div class="w-64 bg-gray-800 text-white min-h-screen p-5">
             <h2 class="text-2xl font-bold mb-8 text-center">Admin Panel</h2>
             <ul>
-                <li class="mb-4"><a href="{{ route('admin.dashboard') }}" class="text-white">📊 Dashboard</a></li>
-                <li class="mb-4"><a href="{{ route('admin.products.index') }}" class="text-white">📦 Manajemen
-                        Produk</a></li>
-                <li class="mb-4"><a href="#" class="text-white">🗂 Manajemen Kategori</a></li> <!-- Belum Selesai -->
-                <li class="mb-4"><a href="#" class="text-white">🧾 Manajemen Pesanan</a></li> <!-- Belum Selesai -->
-                <li class="mb-4"><a href="#" class="text-white">👥 Manajemen User</a></li> <!-- Belum Selesai -->
-                <li class="mb-4"><a href="#" class="text-white">📲 Notifikasi WhatsApp</a></li> <!-- Belum Selesai -->
+                <li class="mb-4">
+                    <a href="{{ route('admin.dashboard') }}"
+                        class="flex items-center text-gray-300 hover:text-white">
+                        <i class="fas fa-tachometer-alt mr-2"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="mb-4">
+                    <a href="{{ route('admin.products.index') }}"
+                        class="flex items-center text-gray-300 hover:text-white">
+                        <i class="fas fa-box mr-2"></i>
+                        Produk
+                    </a>
+                </li>
+                <li class="mb-4">
+                    <a href="{{ route('admin.categories.index') }}"
+                        class="flex items-center text-gray-300 hover:text-white">
+                        <i class="fas fa-cogs mr-2"></i>
+                        Kategori
+                    </a>
+                </li>
             </ul>
 
+            <!-- Logout Button -->
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg">
+                <button type="submit"
+                    class="w-full px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg mt-6">
                     Logout
                 </button>
             </form>

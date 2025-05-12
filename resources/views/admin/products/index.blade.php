@@ -1,57 +1,54 @@
 @extends('layouts.admin')
 
-@section('title', 'Manajemen Produk') <!-- Menambahkan title khusus untuk halaman ini -->
-
 @section('content')
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Manajemen Produk</h2>
-        <a href="{{ route('admin.products.create') }}" class="btn btn-primary px-4 py-2 rounded bg-blue-500 text-white">Tambah
-            Produk</a> <!-- Tombol tambah produk -->
-    </div>
+    <h1 class="text-2xl font-semibold mb-4">Daftar Produk</h1>
 
-    @if($products->isEmpty())
-        <p class="text-gray-500">Belum ada produk yang ditambahkan.</p>
-    @else
-    <table class="table-auto w-full border-collapse border border-gray-200">
+    <!-- Menampilkan pesan sukses jika ada -->
+    @if(Session::has('success'))
+        <div class="bg-green-500 text-white p-4 rounded-md mb-4">
+            {{ Session::get('success') }}
+        </div>
+    @endif
+
+    <a href="{{ route('admin.products.create') }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md mb-4">Tambah Produk</a>
+
+    <table class="min-w-full bg-white border border-gray-200">
         <thead>
-            <tr class="bg-gray-100">
-                <th class="border px-4 py-2">Nama</th>
-                <th class="border px-4 py-2">Deskripsi</th>
-                <th class="border px-4 py-2">Harga</th>
-                <th class="border px-4 py-2">Kategori</th>
-                <th class="border px-4 py-2">Stok</th>
-                <th class="border px-4 py-2">Status</th>
-                <th class="border px-4 py-2">Gambar</th>
-                <th class="border px-4 py-2">Aksi</th>
+            <tr>
+                <th class="px-6 py-4 border-b">ID</th>
+                <th class="px-6 py-4 border-b">Nama Produk</th>
+                <th class="px-6 py-4 border-b">Kategori</th>
+                <th class="px-6 py-4 border-b">Harga</th>
+                <th class="px-6 py-4 border-b">Stok</th>
+                <th class="px-6 py-4 border-b">Gambar</th>
+                <th class="px-6 py-4 border-b">Aksi</th>
             </tr>
         </thead>
         <tbody>
             @foreach($products as $product)
                 <tr>
-                    <td class="border px-4 py-2">{{ $product->name }}</td>
-                    <td class="border px-4 py-2">{{ $product->description }}</td>
-                    <td class="border px-4 py-2">{{ number_format($product->price, 0, ',', '.') }}</td>
-                    <td class="border px-4 py-2">{{ ucfirst($product->category) }}</td>
-                    <td class="border px-4 py-2">{{ $product->stock }}</td>
-                    <td class="border px-4 py-2">{{ ucfirst($product->status) }}</td>
-                    <td class="border px-4 py-2">
-                        @if($product->image)
-                            <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-16 h-16 object-cover rounded">
-                        @else
-                            <span class="text-gray-400">Tidak ada gambar</span>
-                        @endif
+                    <td class="px-6 py-4 border-b">{{ $product->id }}</td>
+                    <td class="px-6 py-4 border-b">{{ $product->name }}</td>
+                    <td class="px-6 py-4 border-b">{{ $product->category->name }}</td>
+                    <td class="px-6 py-4 border-b">{{ $product->price }}</td>
+                    <td class="px-6 py-4 border-b">{{ $product->stock }}</td>
+                    <td class="px-6 py-4 border-b">
+                        @if($product->photo)
+    <img src="{{ asset('storage/' . $product->photo) }}" alt="Foto Produk" class="w-32 h-32 object-cover">
+@else
+    <p>Foto tidak tersedia</p>
+@endif
                     </td>
-                    <td class="border px-4 py-2 space-x-1">
-                        <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-warning">Edit</a>
-                        <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="inline-block">
+                    <td class="px-6 py-4 border-b">
+                        <a href="{{ route('admin.products.edit', $product->id) }}" class="text-yellow-500 hover:text-yellow-600">Edit</a> |
+                        <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" style="display:inline;">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus produk ini?')">Hapus</button>
+                            <button type="submit" class="text-red-500 hover:text-red-600">Hapus</button>
                         </form>
                     </td>
                 </tr>
             @endforeach
         </tbody>
     </table>
-    @endif
 @endsection

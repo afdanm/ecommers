@@ -2,25 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        // Ambil beberapa produk unggulan (misalnya yang stoknya masih tersedia)
-        $products = Product::where('status', 'ready')->take(4)->get();  // Ambil 4 produk unggulan
+        // Ambil 6 kategori, kalau kosong aman
+        $categories = Category::take(6)->get();
 
-        // Kirim data produk ke view beranda
-        return view('home', compact('products'));
+        // Ambil 8 produk terbaru, kalau kosong aman
+        $latestProducts = Product::latest()->take(8)->get();
+        
+
+        return view('home', compact('categories', 'latestProducts'));
+        
     }
 
+    // Buat list semua produk (halaman /products)
     public function listProducts()
-{
-    // Ambil semua produk yang ready
-    $products = Product::where('status', 'ready')->get();
+    {
+        $products = Product::latest()->paginate(12); // Pagination biar rapi
 
-    // Kirim ke view 'products.index'
-    return view('products.index', compact('products'));
-}
+        return view('user.products.index', compact('products'));
+    }
 }

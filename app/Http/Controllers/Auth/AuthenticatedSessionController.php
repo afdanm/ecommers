@@ -30,14 +30,18 @@ class AuthenticatedSessionController extends Controller
         // Regenerate session to prevent session fixation attacks
         $request->session()->regenerate();
 
-        // Check user role and redirect accordingly
+        // Get user info
         $user = Auth::user();
 
+        // Redirect based on role
         if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard'); // Admin dashboard
+        } elseif ($user->role === 'user') {
+            return redirect()->route('home'); // User tetap ke home
         }
 
-        return redirect()->route('user.dashboard'); // User dashboard
+        // Fallback jika role tidak dikenali
+        return redirect()->route('home');
     }
 
     /**

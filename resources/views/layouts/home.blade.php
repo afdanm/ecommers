@@ -1,13 +1,16 @@
 <!-- resources/views/layouts/home.blade.php -->
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mini Bank - E-commerce</title>
     @vite('resources/css/app.css')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body class="font-sans bg-gray-50">
 
     <!-- Navbar -->
@@ -16,27 +19,31 @@
             <a href="{{ route('home') }}" class="text-2xl font-bold text-blue-600 flex items-center">
                 <i class="fas fa-store mr-2"></i> MiniStore
             </a>
-            
+
             <div class="hidden md:flex items-center space-x-8">
                 <a href="{{ route('home') }}" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
                 <a href="{{ route('products.list') }}" class="text-gray-700 hover:text-blue-600 font-medium">Shop</a>
                 <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">Categories</a>
                 <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">About</a>
             </div>
-            
+
             <div class="flex items-center space-x-6">
-                <a href="#" class="text-gray-700 hover:text-blue-600">
-                    <i class="fas fa-search text-lg"></i>
-                </a>
-                <a href="#" class="text-gray-700 hover:text-blue-600 relative">
+                <a href="#" class="text-gray-700 hover:text-blue-600"><i class="fas fa-search text-lg"></i></a>
+                {{-- <a href="{{ route('cart.index') }}" class="text-gray-700 hover:text-blue-600 relative">
                     <i class="fas fa-shopping-cart text-lg"></i>
-                    <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
-                </a>
+                    @if($cartCount > 0)
+                        <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            {{ $cartCount }}
+                        </span>
+                    @endif
+                </a> --}}
+                
                 @auth
-                    <a href="{{ route('profile.edit') }}" class="text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-user-circle text-lg"></i>
-                    </a>
-                    <a href="{{ route('logout') }}" class="text-gray-700 hover:text-blue-600 ml-2">Logout</a>
+                    <a href="{{ route('profile.index') }}" class="text-gray-700 hover:text-blue-600"><i class="fas fa-user-circle text-lg"></i></a>
+                    <form method="POST" action="{{ route('logout') }}" class="inline">
+                        @csrf
+                        <button type="submit" class="text-blue-600 underline">Logout</button>
+                    </form>
                 @else
                     <a href="{{ route('login') }}" class="text-gray-700 hover:text-blue-600">Login</a>
                     <a href="{{ route('register') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Register</a>
@@ -96,13 +103,33 @@
             <div class="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center">
                 <p class="text-gray-400">&copy; 2025 MiniStore. All rights reserved.</p>
                 <div class="flex space-x-6 mt-4 md:mt-0">
-                    <img src="https://via.placeholder.com/40x25" alt="Visa" class="h-6">
-                    <img src="https://via.placeholder.com/40x25" alt="Mastercard" class="h-6">
-                    <img src="https://via.placeholder.com/40x25" alt="PayPal" class="h-6">
+                    <img src="https://via.placeholder.com/100x30?text=Logo+1" alt="Logo 1" class="w-24">
+                    <img src="https://via.placeholder.com/100x30?text=Logo+2" alt="Logo 2" class="w-24">
                 </div>
             </div>
         </div>
     </footer>
 
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+        const bannerSwiper = new Swiper('.bannerSwiper', {
+            loop: true,
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            autoplay: {
+                delay: 4000,
+                disableOnInteraction: false,
+            },
+        });
+    </script>
+
 </body>
+
 </html>
