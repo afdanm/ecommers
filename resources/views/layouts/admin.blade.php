@@ -35,6 +35,14 @@
                         Kategori
                     </a>
                 </li>
+               <li class="mb-4">
+    <a href="{{ route('admin.transactions.index') }}" 
+        class="flex items-center text-gray-300 hover:text-white">
+        <i class="fas fa-shopping-cart mr-2"></i>
+        Pesanan
+    </a>
+</li>
+
             </ul>
 
             <!-- Logout Button -->

@@ -16,10 +16,14 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->decimal('total_price', 15, 2);
             $table->string('status')->default('pending'); // pending, paid, failed
+            $table->enum('purchase_method', ['pickup', 'delivery'])->default('pickup');
+            $table->text('delivery_address')->nullable();
             $table->string('midtrans_order_id')->nullable();
+            $table->string('snap_token')->nullable();
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.

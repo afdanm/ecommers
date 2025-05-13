@@ -1,19 +1,66 @@
 @extends('layouts.home')
 
 @section('content')
+
 <div class="container mx-auto p-4">
     <h1 class="text-3xl font-bold mb-4">Riwayat Transaksi</h1>
 
+    @if (session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{ session('error') }}</span>
+        </div>
+    @endif
+
     @if ($transactions->isEmpty())
-        <p>Belum ada transaksi yang dilakukan.</p>
+        <p class="text-gray-500">Belum ada transaksi yang dilakukan.</p>
     @else
         <div class="space-y-4">
             @foreach ($transactions as $transaction)
-                <div class="bg-white p-4 rounded shadow">
+                <div class="bg-white p-4 rounded shadow {{ $transaction->status == 'paid' ? 'border-l-4 border-green-500' : 'border-l-4 border-yellow-500' }}">
                     <h2 class="text-xl font-semibold">Transaksi #{{ $transaction->id }}</h2>
-                    <p>Status: {{ ucfirst($transaction->status) }}</p>
+                    <p>Status: 
+                        @if($transaction->status == 'paid')
+                            <span class="text-green-600 font-semibold">LUNAS</span>
+                        @else
+                            <span class="text-red-600">Belum Dibayar</span>
+                        @endif
+                    </p>
                     <p>Total Harga: Rp {{ number_format($transaction->total_price) }}</p>
-                    <p>Tanggal: {{ $transaction->created_at->format('d M Y') }}</p>
+                    <p>Tanggal: {{ $transaction->created_at->format('d M Y H:i') }}</p>
+
+                    <!-- Status Pembayaran -->
+                    <div class="mt-2">
+                        <p>Status Pembayaran: 
+                            @if($transaction->status == 'pending')
+                                <span class="text-red-600">Belum Dibayar</span>
+                                <br>
+                                <a href="{{ route('checkout.retry', $transaction->id) }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 inline-block mt-2">Bayar Sekarang</a>
+                            @else
+                                <span class="text-green-600">Sudah Dibayar</span>
+                            @endif
+                        </p>
+                    </div>
+
+                    <!-- Status Pengiriman -->
+                    <div class="mt-2">
+                        <p>Status Pengiriman: 
+                            @if ($transaction->purchase_method === 'delivery')
+                                @if ($transaction->status === 'pending')
+                                    <span class="text-yellow-600">Menunggu Pembayaran</span>
+                                @else
+                                    <span class="text-blue-600">Sedang Diproses</span>
+                                @endif
+                            @else
+                                <span class="text-purple-600">{{ 'Ambil di Tempat' }}</span>
+                            @endif
+                        </p>
+                    </div>
                 </div>
             @endforeach
         </div>

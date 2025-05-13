@@ -48,8 +48,7 @@ class CartController extends Controller
             ]);
         }
 
-        // Update stok produk
-        $product->decrement('stock', $request->qty);
+       
 
         return redirect()->route('cart.index')->with('success', 'Produk berhasil ditambahkan ke keranjang!');
     }

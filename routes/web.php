@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AdminTransactionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,6 +62,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', fn() => view('admin.dashboard'))->name('dashboard');
         Route::resource('products', AdminProductController::class);
         Route::resource('categories', CategoryController::class);
+        Route::get('transactions', [AdminTransactionController::class, 'index'])->name('transactions.index');
+    Route::patch('transactions/{id}', [AdminTransactionController::class, 'update'])->name('transactions.update');
     });
 
     /*
@@ -93,8 +96,14 @@ Route::middleware('auth')->group(function () {
            // Ini cukup success dan error aja
             Route::get('/success', [CheckoutController::class, 'success'])->name('success');
             Route::get('/error', [CheckoutController::class, 'error'])->name('error');
+
+            Route::get('/retry/{transaction}', [CheckoutController::class, 'retry'])->name('retry');
+
             
         });
+
+        Route::post('/checkout/verify-payment', [CheckoutController::class, 'verifyPayment'])
+    ->name('checkout.verify-payment');
 
         //transaction history
         Route::prefix('transaction-history')->name('transaction-history.')->group(function () {
