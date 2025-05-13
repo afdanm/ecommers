@@ -4,6 +4,19 @@
 <div class="container mx-auto p-4">
     <h1 class="text-2xl font-bold mb-4">Daftar Produk</h1>
 
+    {{-- Dropdown Filter Kategori --}}
+    <form method="GET" action="{{ route('products.list') }}" class="mb-4">
+        <label for="category_id" class="mr-2">Filter berdasarkan kategori:</label>
+        <select name="category_id" id="category_id" onchange="this.form.submit()" class="border px-2 py-1 rounded">
+            <option value="">Semua Kategori</option>
+            @foreach ($categories as $category)
+                <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                    {{ $category->name }}
+                </option>
+            @endforeach
+        </select>
+    </form>
+
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @foreach ($products as $product)
             <a href="{{ route('products.show', $product->id) }}" class="border rounded p-4 hover:shadow">

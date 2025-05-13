@@ -14,11 +14,12 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AdminTransactionController;
+use App\Http\Controllers\Admin\SalesReportController;
 
 /*
-|--------------------------------------------------------------------------
+|---------------------------------------------------------------------------
 | RUTE UMUM (Tanpa login)
-|--------------------------------------------------------------------------
+|---------------------------------------------------------------------------
 */
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -28,9 +29,9 @@ Route::get('/products', [UserProductController::class, 'index'])->name('products
 Route::get('/products/{product}', [UserProductController::class, 'show'])->name('products.show');
 
 /*
-|--------------------------------------------------------------------------
+|---------------------------------------------------------------------------
 | RUTE AUTHENTIKASI
-|--------------------------------------------------------------------------
+|---------------------------------------------------------------------------
 */
 
 Route::get('/login', fn() => view('auth.login'))->name('login');
@@ -46,30 +47,37 @@ Route::get('/password/reset', fn() => view('auth.reset-password'))->name('passwo
 Route::post('/password/reset', [NewPasswordController::class, 'store'])->name('password.update');
 
 /*
-|--------------------------------------------------------------------------
+|---------------------------------------------------------------------------
 | RUTE YANG WAJIB LOGIN (AUTH)
-|--------------------------------------------------------------------------
+|---------------------------------------------------------------------------
 */
 
 Route::middleware('auth')->group(function () {
 
     /*
-    |----------------------------------------------------------------------
+    |-----------------------------------------------------------------------
     | ADMIN ROUTES (role: admin)
-    |----------------------------------------------------------------------
+    |-----------------------------------------------------------------------
     */
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', fn() => view('admin.dashboard'))->name('dashboard');
         Route::resource('products', AdminProductController::class);
         Route::resource('categories', CategoryController::class);
+        
+        // Transaksi Admin Routes
         Route::get('transactions', [AdminTransactionController::class, 'index'])->name('transactions.index');
-    Route::patch('transactions/{id}', [AdminTransactionController::class, 'update'])->name('transactions.update');
+        Route::patch('transactions/{id}', [AdminTransactionController::class, 'update'])->name('transactions.update');
+        Route::patch('transactions/{id}/status', [AdminTransactionController::class, 'updateStatus'])->name('transactions.updateStatus');
+
+        // Laporan Penjualan
+        Route::get('reports/sales', [SalesReportController::class, 'index'])->name('reports.sales');
+        Route::get('reports/sales/export', [SalesReportController::class, 'exportExcel'])->name('reports.sales.export');
     });
 
     /*
-    |----------------------------------------------------------------------
+    |-----------------------------------------------------------------------
     | USER ROUTES (role: user)
-    |----------------------------------------------------------------------
+    |-----------------------------------------------------------------------
     */
     Route::middleware('role:user')->group(function () {
 
@@ -84,7 +92,6 @@ Route::middleware('auth')->group(function () {
         Route::prefix('cart')->name('cart.')->group(function () {
             Route::post('/{product}/add', [CartController::class, 'addToCart'])->name('add');
             Route::get('/', [CartController::class, 'index'])->name('index');
-            // Changed from Route::post to Route::delete to support DELETE method
             Route::delete('/remove/{cart}', [CartController::class, 'remove'])->name('remove');
         });
 
@@ -93,25 +100,21 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [CheckoutController::class, 'index'])->name('index');
             Route::post('/', [CheckoutController::class, 'process'])->name('process');
 
-           // Ini cukup success dan error aja
+            // Ini cukup success dan error aja
             Route::get('/success', [CheckoutController::class, 'success'])->name('success');
             Route::get('/error', [CheckoutController::class, 'error'])->name('error');
-
             Route::get('/retry/{transaction}', [CheckoutController::class, 'retry'])->name('retry');
-
-            
         });
 
-        Route::post('/checkout/verify-payment', [CheckoutController::class, 'verifyPayment'])
-    ->name('checkout.verify-payment');
+        // Verify Payment Route
+        Route::post('/checkout/verify-payment', [CheckoutController::class, 'verifyPayment'])->name('checkout.verify-payment');
 
-        //transaction history
+        // Transaction History Routes
         Route::prefix('transaction-history')->name('transaction-history.')->group(function () {
             Route::get('/', [TransactionController::class, 'index'])->name('index');
         });
 
         // Review Routes
         Route::post('/products/{product}/review', [\App\Http\Controllers\User\ReviewController::class, 'store'])->name('products.review.store');
-
     });
 });

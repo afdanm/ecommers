@@ -34,32 +34,16 @@
                     <p>Total Harga: Rp {{ number_format($transaction->total_price) }}</p>
                     <p>Tanggal: {{ $transaction->created_at->format('d M Y H:i') }}</p>
 
-                    <!-- Status Pembayaran -->
-                    <div class="mt-2">
-                        <p>Status Pembayaran: 
-                            @if($transaction->status == 'pending')
-                                <span class="text-red-600">Belum Dibayar</span>
-                                <br>
-                                <a href="{{ route('checkout.retry', $transaction->id) }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 inline-block mt-2">Bayar Sekarang</a>
-                            @else
-                                <span class="text-green-600">Sudah Dibayar</span>
-                            @endif
-                        </p>
-                    </div>
-
                     <!-- Status Pengiriman -->
                     <div class="mt-2">
-                        <p>Status Pengiriman: 
-                            @if ($transaction->purchase_method === 'delivery')
-                                @if ($transaction->status === 'pending')
-                                    <span class="text-yellow-600">Menunggu Pembayaran</span>
-                                @else
-                                    <span class="text-blue-600">Sedang Diproses</span>
-                                @endif
-                            @else
-                                <span class="text-purple-600">{{ 'Ambil di Tempat' }}</span>
-                            @endif
-                        </p>
+<p>Status Pengiriman: 
+    @if ($transaction->purchase_method === 'delivery')
+        <span class="text-blue-600">{{ ucfirst($transaction->shipping_status) }}</span>
+    @else
+        <span class="text-purple-600">{{ 'Ambil di Tempat' }}</span>
+    @endif
+</p>
+
                     </div>
                     @if ($transaction->status == 'paid' && $transaction->products->isNotEmpty())
                         <a href="{{ route('products.show', $transaction->products->first()->id) }}" 

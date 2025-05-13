@@ -42,6 +42,13 @@
         Pesanan
     </a>
 </li>
+                <li class="mb-4">
+                  <a href="{{ route('admin.reports.sales') }}"
+   class="flex items-center text-gray-300 hover:text-white">
+   <i class="fas fa-chart-line mr-2"></i>
+   Laporan Penjualan
+</a>
+</li>
 
             </ul>
 
