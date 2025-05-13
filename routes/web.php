@@ -110,5 +110,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [TransactionController::class, 'index'])->name('index');
         });
 
+        // Review Routes
+        Route::post('/products/{product}/review', [\App\Http\Controllers\User\ReviewController::class, 'store'])->name('products.review.store');
+
     });
 });

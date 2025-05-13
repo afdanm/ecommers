@@ -23,4 +23,18 @@ class Product extends Model
     {
         return $this->belongsTo(Category::class);
     }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+
+public function transactions()
+{
+    return $this->belongsToMany(Transaction::class, 'transaction_items')
+        ->withPivot('quantity', 'price')
+        ->withTimestamps();
+}
+
 }

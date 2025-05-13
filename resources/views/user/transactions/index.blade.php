@@ -61,6 +61,12 @@
                             @endif
                         </p>
                     </div>
+                    @if ($transaction->status == 'paid' && $transaction->products->isNotEmpty())
+                        <a href="{{ route('products.show', $transaction->products->first()->id) }}" 
+                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 inline-block mt-2">
+                            Beri Ulasan
+                        </a>
+                    @endif
                 </div>
             @endforeach
         </div>

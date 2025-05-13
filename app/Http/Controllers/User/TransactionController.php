@@ -8,10 +8,14 @@ use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
-    public function index()
-    {
-        // Mengambil transaksi yang sudah dilakukan oleh pengguna yang login
-        $transactions = Transaction::where('user_id', Auth::id())->get();
-        return view('user.transactions.index', compact('transactions'));
-    }
+public function index()
+{
+    // Load relasi 'products' agar bisa dipakai di view
+    $transactions = Transaction::with('products')
+        ->where('user_id', Auth::id())
+        ->latest()
+        ->get();
+
+    return view('user.transactions.index', compact('transactions'));
+}
 } 

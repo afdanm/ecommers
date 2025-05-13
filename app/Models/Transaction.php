@@ -23,4 +23,11 @@ class Transaction extends Model
     {
         return $this->belongsTo(User::class);
     }
+// Transaction.php
+public function products()
+{
+    return $this->belongsToMany(Product::class, 'transaction_items') // atau nama tabel pivot kamu
+                ->withPivot('quantity', 'price')
+                ->withTimestamps();
+}
 }

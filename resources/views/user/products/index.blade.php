@@ -11,6 +11,14 @@
                 <h2 class="font-semibold">{{ $product->name }}</h2>
                 <p class="text-sm text-gray-500">{{ $product->category->name }}</p>
                 <p class="text-green-600 font-bold mt-1">Rp {{ number_format($product->price) }}</p>
+                <p class="text-sm text-yellow-500">
+                    @if ($product->reviews->count() > 0)
+                        {{ number_format($product->reviews->avg('rating'), 1) }} / 5
+                        ({{ $product->reviews->count() }} ulasan)
+                    @else
+                        Belum ada ulasan
+                    @endif
+                </p>
             </a>
         @endforeach
     </div>

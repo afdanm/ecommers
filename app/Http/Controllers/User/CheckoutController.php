@@ -78,11 +78,15 @@ class CheckoutController extends Controller
                     'delivery_address'  => $deliveryAddress,
                 ]);
 
-                // Kurangi stok produk
-                foreach ($carts as $cart) {
-                    $cart->product->decrement('stock', $cart->quantity);
-                }
+        // Kurangi stok dan simpan ke pivot table
+        foreach ($carts as $cart) {
+            $cart->product->decrement('stock', $cart->quantity);
 
+            $transaction->products()->attach($cart->product_id, [
+                'quantity' => $cart->quantity,
+                'price' => $cart->product->price,
+            ]);
+        }
                 // Midtrans
                 Config::$serverKey = env('MIDTRANS_SERVER_KEY');
                 Config::$isProduction = false; // Gunakan mode sandbox
@@ -140,8 +144,8 @@ public function retry(Transaction $transaction)
     Config::$isSanitized = true;
     Config::$is3ds = true;
 
-    // Buat order ID baru jika belum ada
-    $orderId = $transaction->midtrans_order_id ?? ($transaction->id . '-' . time());
+    // Buat order ID baru yang benar-benar unik
+    $orderId = 'ORDER-' . $transaction->id . '-' . now()->timestamp . '-' . \Str::random(5);
 
     // Siapkan parameter pembayaran
     $params = [
@@ -155,8 +159,12 @@ public function retry(Transaction $transaction)
         ],
     ];
 
-    // Ambil snap token baru dari Midtrans
-    $snapToken = Snap::getSnapToken($params);
+    try {
+        // Ambil snap token baru dari Midtrans
+        $snapToken = Snap::getSnapToken($params);
+    } catch (\Exception $e) {
+        return redirect()->route('transaction-history.index')->with('error', 'Gagal membuat token pembayaran: ' . $e->getMessage());
+    }
 
     // Simpan data baru
     $transaction->update([
@@ -166,6 +174,7 @@ public function retry(Transaction $transaction)
 
     return view('user.checkout.payment', compact('snapToken', 'transaction'));
 }
+
 
 
 public function success(Request $request)
