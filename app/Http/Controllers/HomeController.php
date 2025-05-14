@@ -15,6 +15,8 @@ class HomeController extends Controller
 
         // Ambil 8 produk terbaru, kalau kosong aman
         $latestProducts = Product::latest()->take(8)->get();
+
+       
         
 
         return view('home', compact('categories', 'latestProducts'));

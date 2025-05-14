@@ -20,10 +20,11 @@ return new class extends Migration
             $table->text('delivery_address')->nullable();
             $table->string('midtrans_order_id')->nullable();
             $table->string('snap_token')->nullable();
+            $table->string('payment_status')->default('pending');
+            $table->string('shipping_status')->nullable();
             $table->timestamps();
         });
     }
-
 
     /**
      * Reverse the migrations.
