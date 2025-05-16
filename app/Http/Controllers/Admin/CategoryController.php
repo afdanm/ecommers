@@ -23,9 +23,19 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        Category::create($request->all());
+        $path = null;
+        if ($request->hasFile('foto')) {
+            $path = $request->file('foto')->store('categories', 'public');
+        }
+
+        Category::create([
+            'name' => $request->name,
+            'foto' => $path,
+        ]);
+
         return redirect()->route('admin.categories.index');
     }
 
@@ -43,9 +53,18 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $category->update($request->all());
+        $data = ['name' => $request->name];
+
+        if ($request->hasFile('foto')) {
+            $path = $request->file('foto')->store('categories', 'public');
+            $data['foto'] = $path;
+        }
+
+        $category->update($data);
+
         return redirect()->route('admin.categories.index');
     }
 

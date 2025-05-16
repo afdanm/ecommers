@@ -144,8 +144,8 @@
             @foreach ($categories as $category)
                 <a href="{{ route('products.list') }}?category_id={{ $category->id }}" class="group relative overflow-hidden rounded-xl bg-white shadow-sm hover:shadow-md transition duration-300 border border-gray-100">
                     <div class="aspect-square overflow-hidden">
-                        @if($category->photo)
-                            <img src="{{ asset('storage/' . $category->photo) }}" 
+                        @if($category->foto)
+                            <img src="{{ asset('storage/' . $category->foto) }}" 
                                  alt="{{ $category->name }}" 
                                  class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                                  loading="lazy">
