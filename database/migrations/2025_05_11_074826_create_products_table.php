@@ -17,10 +17,12 @@ class CreateProductsTable extends Migration
             $table->string('image')->nullable();
 
             $table->enum('size_type', ['letter', 'number']); // tipe size produk
-            $table->integer('stock')->default(0)->after('price');  // total stok dari semua size
+            $table->integer('stock')->default(0);// total stok dari semua size
 
             $table->timestamps();
         });
+
+        
     }
 
     public function down()
