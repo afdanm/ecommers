@@ -6,7 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('product_size', function (Blueprint $table) {
             $table->id();
@@ -14,10 +17,15 @@ return new class extends Migration
             $table->foreignId('size_id')->constrained()->onDelete('cascade');
             $table->integer('stock')->default(0);
             $table->timestamps();
+
+            $table->unique(['product_id', 'size_id']);
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('product_size');
     }

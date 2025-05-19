@@ -11,28 +11,66 @@
             <h1 class="text-3xl font-bold mb-2">{{ $product->name }}</h1>
             <p class="text-gray-600 mb-1">Kategori: <strong>{{ $product->category->name }}</strong></p>
             <p class="text-green-600 text-2xl font-bold mb-4">Rp {{ number_format($product->price) }}</p>
-            <p class="mb-2">Stok: <strong>{{ $product->stock }}</strong></p>
+            
+            {{-- Size Information --}}
+            @if($product->sizes->count() > 0)
+                <div class="mb-4">
+                    <h3 class="font-semibold mb-2">Ukuran Tersedia:</h3>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($product->availableSizes as $size)
+                            <div class="border rounded px-3 py-1 text-center 
+                                {{ $size['available'] ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-gray-100 opacity-70' }}">
+                                <div class="font-medium">{{ $size['name'] }}</div>
+                                <div class="text-xs {{ $size['available'] ? 'text-gray-600' : 'text-gray-400' }}">
+                                    {{ $size['available'] ? $size['stock'].' tersedia' : 'Habis' }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @else
+                <p class="mb-2">Stok: <strong>{{ $product->stock }}</strong></p>
+            @endif
+
             <p class="mb-4">{{ $product->description }}</p>
 
             {{-- Add to Cart / Login Modal --}}
             @auth
-                <form action="{{ route('cart.add', $product->id) }}" method="POST" class="flex items-center space-x-4">
+                <form action="{{ route('cart.add', $product->id) }}" method="POST" class="flex flex-col space-y-4">
                     @csrf
-                    <div class="flex items-center border border-gray-300 rounded">
-                        <button type="button" class="px-3 py-1 decrement-btn" {{ $product->stock <= 1 ? 'disabled' : '' }}>-</button>
-                        <input type="number" name="qty" value="1" min="1" max="{{ $product->stock }}" class="w-12 text-center border-x border-gray-300 py-1" {{ $product->stock <= 0 ? 'disabled' : '' }}>
-                        <button type="button" class="px-3 py-1 increment-btn" {{ $product->stock <= 1 ? 'disabled' : '' }}>+</button>
+                    
+                    @if($product->sizes->count() > 0)
+                        <div>
+                            <label for="size_id" class="block text-sm font-medium text-gray-700 mb-1">Pilih Ukuran</label>
+                            <select name="size_id" id="size_id" class="w-full border border-gray-300 rounded-md px-3 py-2" required>
+                                <option value="">-- Pilih Ukuran --</option>
+                                @foreach($product->availableSizes->where('available', true) as $size)
+                                    <option value="{{ $size['id'] }}">{{ $size['name'] }} (Tersedia: {{ $size['stock'] }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center border border-gray-300 rounded">
+                            <button type="button" class="px-3 py-1 decrement-btn" {{ $product->total_stock <= 1 ? 'disabled' : '' }}>-</button>
+                            <input type="number" name="qty" value="1" min="1" max="{{ $product->total_stock }}" 
+                                   class="w-12 text-center border-x border-gray-300 py-1" 
+                                   {{ $product->total_stock <= 0 ? 'disabled' : '' }}>
+                            <button type="button" class="px-3 py-1 increment-btn" {{ $product->total_stock <= 1 ? 'disabled' : '' }}>+</button>
+                        </div>
+                        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" 
+                                {{ $product->total_stock <= 0 ? 'disabled' : '' }}>
+                            Masukkan ke Keranjang
+                        </button>
                     </div>
-                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" {{ $product->stock <= 0 ? 'disabled' : '' }}>
-                        Masukkan ke Keranjang
-                    </button>
-                </form>
 
-                @if(session('error'))
-                    <div class="mt-4 text-red-500">
-                        {{ session('error') }}
-                    </div>
-                @endif
+                    @if(session('error'))
+                        <div class="mt-2 text-red-500">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+                </form>
             @else
                 <button onclick="openLoginModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
                     Masukkan ke Keranjang
@@ -45,12 +83,12 @@
     <div class="mt-8">
         <h2 class="text-2xl font-bold mb-4">Ulasan Produk</h2>
 
-    @php
-        $hasPurchased = Auth::check() && isset($product) && Auth::user()->transactions()
-            ->where('status', 'paid') // Hanya transaksi dengan status 'paid'
-            ->whereHas('products', fn($q) => $q->where('product_id', $product->id))
-            ->exists();
-    @endphp
+        @php
+            $hasPurchased = Auth::check() && isset($product) && Auth::user()->transactions()
+                ->where('status', 'paid')
+                ->whereHas('products', fn($q) => $q->where('product_id', $product->id))
+                ->exists();
+        @endphp
 
         @auth
             @if ($hasPurchased)

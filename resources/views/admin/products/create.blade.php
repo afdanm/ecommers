@@ -1,88 +1,115 @@
 @extends('layouts.admin')
 
 @section('content')
-    <h1 class="text-2xl font-semibold mb-4">Tambah Produk</h1>
+<h1 class="text-xl font-bold mb-4">Tambah Produk</h1>
 
-    <!-- Menampilkan pesan sukses jika ada -->
-    @if(Session::has('success'))
-        <div class="bg-green-500 text-white p-4 rounded-md mb-4">
-            {{ Session::get('success') }}
+<form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
+    @csrf
+
+    <div class="mb-4">
+        <label>Nama Produk</label>
+        <input type="text" name="name" class="form-input w-full" required>
+    </div>
+
+    <div class="mb-4">
+        <label>Kategori</label>
+        <select name="category_id" class="form-select w-full" required>
+            <option value="">Pilih Kategori</option>
+            @foreach ($categories as $category)
+                <option value="{{ $category->id }}">{{ $category->name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="mb-4">
+        <label>Harga</label>
+        <input type="number" name="price" class="form-input w-full" required>
+    </div>
+
+    <div class="mb-4">
+        <label>Deskripsi</label>
+        <textarea name="description" class="form-textarea w-full"></textarea>
+    </div>
+
+    <div class="mb-4">
+        <label>Gambar</label>
+        <input type="file" name="image" class="form-input w-full">
+    </div>
+
+    <div class="mb-4">
+        <label>Jenis Size</label>
+        <select name="size_type" id="sizeType" class="form-select w-full" required>
+            <option value="">Pilih Jenis Size</option>
+            <option value="huruf">Huruf (XS - XXL)</option>
+            <option value="angka">Angka (35 - 50)</option>
+        </select>
+    </div>
+
+    <div id="sizeOptions" class="mb-4 hidden">
+        <label>Pilih Size dan Input Stok</label>
+        <div id="sizesContainer" class="grid grid-cols-2 gap-2 mt-2">
+            {{-- Akan diisi dengan JavaScript --}}
         </div>
-    @endif
+    </div>
 
-    <!-- Form untuk menambah produk -->
-    <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
-        @csrf
+    <div class="mb-4">
+        <label>Total Stok</label>
+        <input type="number" name="total_stock_display" id="totalStock" class="form-input w-full bg-gray-100" readonly>
+    </div>
 
-        <!-- Nama Produk -->
-        <div class="mb-4">
-            <label for="name" class="block text-sm font-medium text-gray-700">Nama Produk</label>
-            <input type="text" id="name" name="name" class="mt-1 p-2 w-full border border-gray-300 rounded-md"
-                   value="{{ old('name') }}" required>
-            @error('name')
-                <span class="text-red-500 text-sm">{{ $message }}</span>
-            @enderror
-        </div>
+    <button type="submit" class="btn btn-primary">Simpan</button>
+</form>
 
-        <!-- Deskripsi Produk -->
-        <div class="mb-4">
-            <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi Produk</label>
-            <textarea id="description" name="description" rows="4" class="mt-1 p-2 w-full border border-gray-300 rounded-md" required>{{ old('description') }}</textarea>
-            @error('description')
-                <span class="text-red-500 text-sm">{{ $message }}</span>
-            @enderror
-        </div>
+<script>
+    const letterSizes = @json($letterSizes);
+    const numberSizes = @json($numberSizes);
 
-        <!-- Harga Produk -->
-        <div class="mb-4">
-            <label for="price" class="block text-sm font-medium text-gray-700">Harga Produk</label>
-            <input type="number" id="price" name="price" class="mt-1 p-2 w-full border border-gray-300 rounded-md"
-                   value="{{ old('price') }}" required>
-            @error('price')
-                <span class="text-red-500 text-sm">{{ $message }}</span>
-            @enderror
-        </div>
+    const sizeTypeSelect = document.getElementById('sizeType');
+    const sizesContainer = document.getElementById('sizesContainer');
+    const sizeOptions = document.getElementById('sizeOptions');
+    const totalStockInput = document.getElementById('totalStock');
 
-        <!-- Stok Produk -->
-        <div class="mb-4">
-            <label for="stock" class="block text-sm font-medium text-gray-700">Stok Produk</label>
-            <input type="number" id="stock" name="stock" class="mt-1 p-2 w-full border border-gray-300 rounded-md"
-                   value="{{ old('stock') }}" required>
-            @error('stock')
-                <span class="text-red-500 text-sm">{{ $message }}</span>
-            @enderror
-        </div>
+    sizeTypeSelect.addEventListener('change', function () {
+        const type = this.value;
+        let sizes = type === 'huruf' ? letterSizes : numberSizes;
 
-        <!-- Kategori Produk -->
-        <div class="mb-4">
-            <label for="category_id" class="block text-sm font-medium text-gray-700">Kategori Produk</label>
-            <select id="category_id" name="category_id" class="mt-1 p-2 w-full border border-gray-300 rounded-md" required>
-                <option value="">Pilih Kategori</option>
-                @foreach($categories as $category)
-                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                        {{ $category->name }}
-                    </option>
-                @endforeach
-            </select>
-            @error('category_id')
-                <span class="text-red-500 text-sm">{{ $message }}</span>
-            @enderror
-        </div>
+        sizesContainer.innerHTML = '';
+        totalStockInput.value = 0;
 
-        <!-- Foto Produk -->
-        <div class="mb-4">
-            <label for="photo" class="block text-sm font-medium text-gray-700">Foto Produk</label>
-            <input type="file" id="photo" name="photo" class="mt-1 p-2 w-full border border-gray-300 rounded-md">
-            @error('photo')
-                <span class="text-red-500 text-sm">{{ $message }}</span>
-            @enderror
-        </div>
+        if (type) {
+            sizeOptions.classList.remove('hidden');
+            sizes.forEach(size => {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = `
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" name="sizes[]" value="${size.id}" onchange="toggleStockInput(this)">
+                        ${size.name}
+                    </label>
+                    <input type="number" name="stocks[]" data-size="${size.id}" class="form-input w-full mt-1 stock-input hidden" placeholder="Stok" oninput="updateTotalStock()" min="0" value="0">
+                `;
+                sizesContainer.appendChild(wrapper);
+            });
+        } else {
+            sizeOptions.classList.add('hidden');
+        }
+    });
 
-        <!-- Tombol Submit -->
-        <div class="mb-4">
-            <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md">
-                Simpan Produk
-            </button>
-        </div>
-    </form>
+    function toggleStockInput(checkbox) {
+        const stockInput = checkbox.closest('div').querySelector('.stock-input');
+        stockInput.classList.toggle('hidden', !checkbox.checked);
+        if (!checkbox.checked) {
+            stockInput.value = 0;
+            updateTotalStock();
+        }
+    }
+
+    function updateTotalStock() {
+        let total = 0;
+        document.querySelectorAll('.stock-input:not(.hidden)').forEach(input => {
+            const val = parseInt(input.value) || 0;
+            total += val;
+        });
+        totalStockInput.value = total;
+    }
+</script>
 @endsection

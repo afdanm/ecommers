@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
-use Illuminate\Http\Request;
+use App\Models\Size;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Session;
+
 
 class ProductController extends Controller
 {
@@ -19,94 +21,129 @@ class ProductController extends Controller
     public function create()
     {
         $categories = Category::all();
-        return view('admin.products.create', compact('categories'));
+        $letterSizes = Size::where('type', 'letter')->get();
+        $numberSizes = Size::where('type', 'number')->get();
+        
+
+        return view('admin.products.create', compact('categories', 'letterSizes', 'numberSizes'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric',
-            'stock' => 'required|integer',
             'category_id' => 'required|exists:categories,id',
-            'photo' => 'nullable|image|mimes:jpg,png,jpeg,gif|max:2048', // Validasi gambar
+            'price' => 'required|numeric',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image',
+            'size_type' => 'required|in:huruf,angka',
+            'sizes' => 'required|array',
+            'sizes.*' => 'exists:sizes,id',
+            'stocks' => 'required|array',
+            'stocks.*' => 'required|integer|min:0',
         ]);
-    
-        // Upload foto jika ada
-        $photoPath = null;
-        if ($request->hasFile('photo')) {
-            $photoPath = $request->file('photo')->store('products', 'public'); // Menyimpan gambar di storage/app/public/products
+
+        // Hitung total stok
+        $totalStock = array_sum($request->stocks);
+
+        // Upload gambar jika ada
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('products', 'public');
         }
-    
-        Product::create([
+
+        // Simpan produk
+        $product = Product::create([
             'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'stock' => $request->stock,
             'category_id' => $request->category_id,
-            'photo' => $photoPath, // Menyimpan path gambar di database
+            'price' => $request->price,
+            'description' => $request->description,
+            'image' => $imagePath,
+            'stock' => $totalStock,
         ]);
-    
-        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan');
+
+        // Simpan ukuran dan stok ke tabel pivot
+        foreach ($request->sizes as $index => $sizeId) {
+            $product->sizes()->attach($sizeId, [
+                'stock' => $request->stocks[$index],
+            ]);
+        }
+
+        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
-    public function edit(Product $product)
+    public function edit($id)
     {
+        $product = Product::with('sizes')->findOrFail($id);
         $categories = Category::all();
-        return view('admin.products.edit', compact('product', 'categories'));
+        $letterSizes = Size::whereHas('typeSize', fn ($q) => $q->where('name', 'huruf'))->get();
+        $numberSizes = Size::whereHas('typeSize', fn ($q) => $q->where('name', 'angka'))->get();
+
+        return view('admin.products.edit', compact('product', 'categories', 'letterSizes', 'numberSizes'));
     }
 
-    public function update(Request $request, Product $product)
+    public function update(Request $request, $id)
     {
+        $product = Product::findOrFail($id);
+
         $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric',
-            'stock' => 'required|integer',
             'category_id' => 'required|exists:categories,id',
-            'photo' => 'nullable|image|mimes:jpg,png,jpeg,gif|max:2048', // Validasi gambar
+            'price' => 'required|numeric',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image',
+            'size_type' => 'required|in:huruf,angka',
+            'sizes' => 'required|array',
+            'sizes.*' => 'exists:sizes,id',
+            'stocks' => 'required|array',
+            'stocks.*' => 'required|integer|min:0',
         ]);
-    
-        // Upload foto jika ada
-        if ($request->hasFile('photo')) {
-            // Hapus foto lama jika ada
-            if ($product->photo && file_exists(storage_path('app/public/' . $product->photo))) {
-                unlink(storage_path('app/public/' . $product->photo));
+
+        // Hitung total stok
+        $totalStock = array_sum($request->stocks);
+
+        // Upload gambar baru jika ada
+        if ($request->hasFile('image')) {
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
             }
-    
-            // Simpan foto baru
-            $photoPath = $request->file('photo')->store('products', 'public'); // Menyimpan gambar baru
-        } else {
-            $photoPath = $product->photo; // Jika tidak ada gambar baru, gunakan foto lama
+            $product->image = $request->file('image')->store('products', 'public');
         }
-    
+
         // Update produk
         $product->update([
             'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'stock' => $request->stock,
             'category_id' => $request->category_id,
-            'photo' => $photoPath, // Menyimpan path gambar di database
+            'price' => $request->price,
+            'description' => $request->description,
+            'stock' => $totalStock,
         ]);
-    
-        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil diperbarui');
-    }
 
-    public function destroy(Product $product)
-    {
-        // Hapus foto jika ada
-        if ($product->photo && file_exists(storage_path('app/public/' . $product->photo))) {
-            unlink(storage_path('app/public/' . $product->photo));
+        // Sync ukuran dan stok
+        $syncData = [];
+        foreach ($request->sizes as $index => $sizeId) {
+            $syncData[$sizeId] = ['stock' => $request->stocks[$index]];
         }
+        $product->sizes()->sync($syncData);
 
-        // Hapus produk
-        $product->delete();
-
-        // Menambahkan notifikasi sukses
-        Session::flash('success', 'Produk berhasil dihapus!');
-
-        return redirect()->route('admin.products.index');
+        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil diperbarui.');
     }
+
+    public function destroy($id)
+    {
+        $product = Product::findOrFail($id);
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
+        }
+        $product->delete();
+        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil dihapus.');
+    }
+
+    public function show($id)
+{
+    $product = Product::with(['category', 'sizes'])->findOrFail($id);
+    
+    return view('admin.products.show', compact('product'));
+}
+
 }

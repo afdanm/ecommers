@@ -9,29 +9,29 @@ use App\Models\Category;
 
 class ProductController extends Controller
 {
-    
-public function index(Request $request)
-{
-    $query = Product::with('category', 'reviews');
+    public function index(Request $request)
+    {
+        $query = Product::with('category', 'reviews', 'sizes');
 
-    // Filter berdasarkan kategori jika ada
-    if ($request->filled('category_id')) {
-        $query->where('category_id', $request->category_id);
+        // Filter berdasarkan kategori jika ada
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Filter berdasarkan nama produk
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $products = $query->get();
+        $categories = Category::all();
+
+        return view('user.products.index', compact('products', 'categories'));
     }
-
-    // Filter berdasarkan nama produk
-    if ($request->filled('search')) {
-        $query->where('name', 'like', '%' . $request->search . '%');
-    }
-
-    $products = $query->get();
-    $categories = Category::all();
-
-    return view('user.products.index', compact('products', 'categories'));
-}
 
     public function show(Product $product)
     {
+        $product->load(['category', 'sizes', 'reviews.user']);
         return view('user.products.show', compact('product'));
     }
 }
