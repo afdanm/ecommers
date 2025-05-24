@@ -13,12 +13,15 @@
 
     <div class="mb-4">
         <label>Kategori</label>
-        <select name="category_id" class="form-select w-full" required>
-            <option value="">Pilih Kategori</option>
-            @foreach ($categories as $category)
-                <option value="{{ $category->id }}">{{ $category->name }}</option>
-            @endforeach
-        </select>
+<select name="category_id" class="form-select" required>
+    <option value="">-- Pilih Kategori --</option>
+    @foreach($categories as $category)
+        <option value="{{ $category->id }}" {{ old('category_id', $selectedCategoryId ?? '') == $category->id ? 'selected' : '' }}>
+            {{ $category->name }}
+        </option>
+    @endforeach
+</select>
+
     </div>
 
     <div class="mb-4">

@@ -22,13 +22,6 @@
                     </a>
                 </li>
                 <li class="mb-4">
-                    <a href="{{ route('admin.products.index') }}"
-                        class="flex items-center text-gray-300 hover:text-white">
-                        <i class="fas fa-box mr-2"></i>
-                        Produk
-                    </a>
-                </li>
-                <li class="mb-4">
                     <a href="{{ route('admin.categories.index') }}"
                         class="flex items-center text-gray-300 hover:text-white">
                         <i class="fas fa-cogs mr-2"></i>

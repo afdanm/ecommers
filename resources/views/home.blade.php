@@ -181,7 +181,7 @@
                 <div class="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 border border-gray-100">
                     <a href="{{ route('products.show', $product->id) }}" class="block">
                         <div class="aspect-square overflow-hidden relative">
-                            <img src="{{ asset('storage/' . $product->photo) }}" 
+                            <img src="{{ asset('storage/' . $product->image) }}" 
                                  alt="{{ $product->name }}" 
                                  class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                                  loading="lazy">

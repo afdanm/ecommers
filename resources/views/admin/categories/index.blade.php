@@ -18,7 +18,12 @@
             @foreach($categories as $category)
                 <tr>
                     <td class="px-6 py-4 border-b">{{ $category->id }}</td>
-                    <td class="px-6 py-4 border-b">{{ $category->name }}</td>
+<td class="px-6 py-4 border-b">
+    <a href="{{ route('admin.products.index', ['category_id' => $category->id]) }}" class="text-blue-600 hover:underline">
+        {{ $category->name }}
+    </a>
+</td>
+
                     <td class="px-6 py-4 border-b">
                         @if($category->foto)
                         <img src="{{ asset('storage/' . $category->foto) }}" alt="Gambar Kategori" class="w-32 h-32 object-cover">

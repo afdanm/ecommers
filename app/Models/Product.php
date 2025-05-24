@@ -10,7 +10,7 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'category_id', 'price', 'description', 'photo', 'size_type', 'stock',
+        'name', 'category_id', 'price', 'description', 'image', 'size_type', 'stock',
     ];
 
     // Relasi ke kategori

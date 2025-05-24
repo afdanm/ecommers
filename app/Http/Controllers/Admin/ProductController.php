@@ -12,21 +12,34 @@ use App\Http\Controllers\Controller;
 
 class ProductController extends Controller
 {
-    public function index()
-    {
-        $products = Product::with('category')->get();
-        return view('admin.products.index', compact('products'));
+public function index(Request $request)
+{
+    $query = Product::with('category');
+
+    $category = null;
+    if ($request->has('category_id')) {
+        $query->where('category_id', $request->category_id);
+        $category = Category::find($request->category_id);
     }
 
-    public function create()
-    {
-        $categories = Category::all();
-        $letterSizes = Size::where('type', 'letter')->get();
-        $numberSizes = Size::where('type', 'number')->get();
-        
+    $products = $query->get();
 
-        return view('admin.products.create', compact('categories', 'letterSizes', 'numberSizes'));
-    }
+    return view('admin.products.index', compact('products', 'category'));
+}
+
+
+
+public function create(Request $request)
+{
+    $categories = Category::all();
+    $letterSizes = Size::where('type', 'letter')->get();
+    $numberSizes = Size::where('type', 'number')->get();
+    $selectedCategoryId = $request->category_id; // untuk form
+
+    return view('admin.products.create', compact('categories', 'letterSizes', 'numberSizes', 'selectedCategoryId'));
+}
+
+
 
     public function store(Request $request)
     {
@@ -69,15 +82,17 @@ class ProductController extends Controller
             ]);
         }
 
-        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan.');
+return redirect()->route('admin.products.index', ['category_id' => $request->category_id])
+                 ->with('success', 'Produk berhasil ditambahkan.');
     }
 
     public function edit($id)
     {
         $product = Product::with('sizes')->findOrFail($id);
         $categories = Category::all();
-        $letterSizes = Size::whereHas('typeSize', fn ($q) => $q->where('name', 'huruf'))->get();
-        $numberSizes = Size::whereHas('typeSize', fn ($q) => $q->where('name', 'angka'))->get();
+$letterSizes = Size::where('type', 'letter')->get();
+$numberSizes = Size::where('type', 'number')->get();
+
 
         return view('admin.products.edit', compact('product', 'categories', 'letterSizes', 'numberSizes'));
     }
@@ -126,18 +141,25 @@ class ProductController extends Controller
         }
         $product->sizes()->sync($syncData);
 
-        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil diperbarui.');
+       return redirect()->route('admin.products.index', ['category_id' => $request->category_id])
+                 ->with('success', 'Produk berhasil ditambahkan.');
     }
 
-    public function destroy($id)
-    {
-        $product = Product::findOrFail($id);
-        if ($product->image) {
-            Storage::disk('public')->delete($product->image);
-        }
-        $product->delete();
-        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil dihapus.');
+public function destroy($id)
+{
+    $product = Product::findOrFail($id);
+    $categoryId = $product->category_id;  // simpan dulu category_id sebelum dihapus
+    
+    if ($product->image) {
+        Storage::disk('public')->delete($product->image);
     }
+    $product->delete();
+    
+    return redirect()->route('admin.products.index', ['category_id' => $categoryId])
+                 ->with('success', 'Produk berhasil dihapus.');
+
+}
+
 
     public function show($id)
 {
