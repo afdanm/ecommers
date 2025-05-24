@@ -1,4 +1,3 @@
-{{-- resources/views/user/checkout/index.blade.php --}}
 @extends('layouts.home')
 
 @section('content')
@@ -44,7 +43,13 @@
         <!-- Alamat jika delivery -->
         <div id="address-section" class="bg-white rounded shadow p-4 {{ old('purchase_method') == 'delivery' ? '' : 'hidden' }}">
             <label for="delivery_address" class="block font-medium mb-2">Alamat Pengiriman</label>
-            <textarea name="delivery_address" id="delivery_address" rows="3" class="w-full border rounded p-2">{{ old('delivery_address') }}</textarea>
+            <textarea 
+                name="delivery_address" 
+                id="delivery_address" 
+                rows="3" 
+                class="w-full border rounded p-2"
+                {{ old('purchase_method') !== 'delivery' ? 'disabled' : '' }}
+            >{{ old('delivery_address') }}</textarea>
             @error('delivery_address')
                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
             @enderror
@@ -60,10 +65,15 @@
     function toggleAddress() {
         const method = document.getElementById('purchase_method').value;
         const addressSection = document.getElementById('address-section');
+        const textarea = document.getElementById('delivery_address');
+
         if (method === 'delivery') {
             addressSection.classList.remove('hidden');
+            textarea.disabled = false;
         } else {
             addressSection.classList.add('hidden');
+            textarea.disabled = true;
+            textarea.value = ''; // kosongkan agar tidak dikirim
         }
     }
 

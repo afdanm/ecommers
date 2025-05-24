@@ -57,4 +57,6 @@ class Product extends Model
         }
         return $this->stock; // Fallback to single stock if no sizes
     }
+
+    
 }

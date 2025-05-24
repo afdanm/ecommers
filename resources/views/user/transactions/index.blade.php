@@ -38,6 +38,22 @@
                             </p>
                         @endif
                     </div>
+
+                    {{-- Tombol Ulasan --}}
+                    <div class="mt-4">
+                        @php
+                            $firstProduct = $transaction->products->first();
+                        @endphp
+
+                        @if ($firstProduct)
+                            <a href="{{ route('products.show', $firstProduct->id) }}" 
+                               class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                                Beri Ulasan
+                            </a>
+                        @else
+                            <span class="text-gray-400 italic">Tidak ada produk untuk ulasan</span>
+                        @endif
+                    </div>
                 </div>
             @endforeach
         </div>

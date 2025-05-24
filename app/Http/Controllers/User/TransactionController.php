@@ -53,4 +53,6 @@ class TransactionController extends Controller
 
         return redirect()->route('user.transactions.index')->with('success', 'Transaksi berhasil dibuat.');
     }
+
+    
 }

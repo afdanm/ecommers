@@ -89,59 +89,99 @@ class CheckoutController extends Controller
         return view('user.checkout.payment', compact('snapToken', 'carts', 'total', 'orderId', 'purchaseMethod'));
     }
 
-    public function paymentSuccess(Request $request)
-    {
-        $user = Auth::user();
-        $orderId = session('order_id');
-        $purchaseMethod = session('purchase_method', 'pickup');
-        $deliveryAddress = session('delivery_address', null);
+public function paymentSuccess(Request $request)
+{
+    $user = Auth::user();
+    $orderId = session('order_id');
+    $purchaseMethod = session('purchase_method', 'pickup');
+    $deliveryAddress = session('delivery_address', null);
 
-        $carts = Cart::with('product')->where('user_id', $user->id)->get();
+    $carts = Cart::with('product')->where('user_id', $user->id)->get();
 
-        if ($carts->isEmpty()) {
-            return redirect()->route('cart.index')->with('error', 'Keranjang kosong.');
+    if ($carts->isEmpty()) {
+        return redirect()->route('cart.index')->with('error', 'Keranjang kosong.');
+    }
+
+    // Cek stok produk dan stok size
+    foreach ($carts as $cart) {
+        if ($cart->quantity > $cart->product->stock) {
+            return redirect()->route('cart.index')->with('error', 'Stok produk "' . $cart->product->name . '" tidak mencukupi.');
         }
 
-        foreach ($carts as $cart) {
-            if ($cart->quantity > $cart->product->stock) {
-                return redirect()->route('cart.index')->with('error', 'Stok produk "' . $cart->product->name . '" tidak mencukupi.');
+        if ($cart->size_id) {
+            $sizeStock = DB::table('product_size')
+                ->where('product_id', $cart->product_id)
+                ->where('size_id', $cart->size_id)
+                ->value('stock');
+
+            if ($sizeStock === null || $cart->quantity > $sizeStock) {
+                return redirect()->route('cart.index')->with('error', 'Stok size produk "' . $cart->product->name . '" tidak mencukupi.');
             }
-        }
-
-        $total = $carts->sum(fn($c) => $c->product->price * $c->quantity);
-
-        DB::beginTransaction();
-        try {
-            $transaction = Transaction::create([
-                'user_id' => $user->id,
-                'total_price' => $total,
-                'status' => 'paid',
-                'midtrans_order_id' => $orderId,
-                'purchase_method' => $purchaseMethod,
-                'delivery_address' => $deliveryAddress,
-                'payment_status' => 'paid',
-            ]);
-
-            foreach ($carts as $cart) {
-                $cart->product->decrement('stock', $cart->quantity);
-                $transaction->products()->attach($cart->product_id, [
-                    'quantity' => $cart->quantity,
-                    'price' => $cart->product->price,
-                ]);
-            }
-
-            Cart::where('user_id', $user->id)->delete();
-
-            DB::commit();
-
-            session()->forget(['purchase_method', 'delivery_address', 'order_id']);
-
-            return redirect()->route('transaction-history.index')->with('success', 'Pembayaran berhasil.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->route('cart.index')->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
         }
     }
+
+    $total = $carts->sum(fn($c) => $c->product->price * $c->quantity);
+
+    DB::beginTransaction();
+    try {
+        $transaction = Transaction::create([
+            'user_id' => $user->id,
+            'total_price' => $total,
+            'status' => 'paid',
+            'midtrans_order_id' => $orderId,
+            'purchase_method' => $purchaseMethod,
+            'delivery_address' => $deliveryAddress,
+            'payment_status' => 'paid',
+        ]);
+
+        foreach ($carts as $cart) {
+            // Kurangi stok produk total
+            $cart->product->decrement('stock', $cart->quantity);
+
+            // Kurangi stok size di pivot product_size jika ada size_id
+            if ($cart->size_id) {
+                $currentStock = DB::table('product_size')
+                    ->where('product_id', $cart->product_id)
+                    ->where('size_id', $cart->size_id)
+                    ->value('stock');
+
+                if ($currentStock === null) {
+                    throw new \Exception("Stok size tidak ditemukan untuk produk {$cart->product->name}.");
+                }
+
+                if ($currentStock < $cart->quantity) {
+                    throw new \Exception("Stok size tidak mencukupi untuk produk {$cart->product->name}.");
+                }
+
+                DB::table('product_size')
+                    ->where('product_id', $cart->product_id)
+                    ->where('size_id', $cart->size_id)
+                    ->update(['stock' => $currentStock - $cart->quantity]);
+            }
+
+            // Attach produk ke transaksi
+            $transaction->products()->attach($cart->product_id, [
+                'quantity' => $cart->quantity,
+                'price' => $cart->product->price,
+                // Jika ingin simpan size_id di pivot transaction_items, tambahkan di migration & model
+                //'size_id' => $cart->size_id,
+            ]);
+        }
+
+        // Hapus cart user
+        Cart::where('user_id', $user->id)->delete();
+
+        DB::commit();
+
+        // Bersihkan session data checkout
+        session()->forget(['purchase_method', 'delivery_address', 'order_id']);
+
+        return redirect()->route('transaction-history.index')->with('success', 'Pembayaran berhasil.');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->route('cart.index')->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
+    }
+}
 
     public function error()
     {
