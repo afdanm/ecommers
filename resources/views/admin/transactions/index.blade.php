@@ -10,49 +10,65 @@
         </div>
     @endif
 
-    <table class="table-auto w-full">
+    <table class="table-auto w-full border-collapse border border-gray-200">
         <thead>
-            <tr>
-                <th>#</th>
-                <th>User</th>
-                <th>Harga Total</th>
-                <th>Metode</th>
-                <th>Status</th>
-                <th>Alamat</th>
-                <th>Aksi</th>
+            <tr class="bg-gray-100">
+                <th class="border border-gray-300 px-4 py-2">#</th>
+                <th class="border border-gray-300 px-4 py-2">User</th>
+                <th class="border border-gray-300 px-4 py-2">Harga Total</th>
+                <th class="border border-gray-300 px-4 py-2">Metode</th>
+                <th class="border border-gray-300 px-4 py-2">Status Transaksi</th>
+                <th class="border border-gray-300 px-4 py-2">Status Pengiriman</th>
+                <th class="border border-gray-300 px-4 py-2">Alamat</th>
+                <th class="border border-gray-300 px-4 py-2">Aksi</th>
             </tr>
         </thead>
         <tbody>
             @foreach($transactions as $t)
                 <tr>
-                    <td>{{ $t->id }}</td>
-                    <td>{{ $t->user->name }}</td>
-                    <td>Rp {{ number_format($t->total_price) }}</td>
-                    <td>{{ ucfirst($t->purchase_method) }}</td>
-                    <td>{{ ucfirst($t->status) }}</td>
-                    <td>{{ $t->delivery_address ?? '-' }}</td>
-                    <td>
-                        <!-- Form untuk mengubah status transaksi -->
-                        <form action="{{ route('admin.transactions.update', $t->id) }}" method="POST">
-                            @csrf @method('PATCH')
-                            <select name="status" onchange="this.form.submit()">
-                                <option {{ $t->status == 'diproses' ? 'selected' : '' }} value="diproses">Diproses</option>
-                                <option {{ $t->status == 'dikirim' ? 'selected' : '' }} value="dikirim">Dikirim</option>
-                                <option {{ $t->status == 'selesai' ? 'selected' : '' }} value="selesai">Selesai</option>
-                            </select>
-                        </form>
+                    <td class="border border-gray-300 px-4 py-2">{{ $t->id }}</td>
+                    <td class="border border-gray-300 px-4 py-2">{{ $t->user->name }}</td>
+                    <td class="border border-gray-300 px-4 py-2">Rp {{ number_format($t->total_price) }}</td>
+                    <td class="border border-gray-300 px-4 py-2">{{ ucfirst($t->purchase_method) }}</td>
 
-                        <!-- Tombol untuk update status pengiriman -->
-<!-- Form untuk mengubah status pengiriman -->
-<form action="{{ route('admin.transactions.update', $t->id) }}" method="POST">
-    @csrf @method('PATCH')
-    <select name="shipping_status" onchange="this.form.submit()">
-        <option {{ $t->shipping_status == 'diproses' ? 'selected' : '' }} value="diproses">Sedang Diproses</option>
-        <option {{ $t->shipping_status == 'dikirim' ? 'selected' : '' }} value="dikirim">Dikirim</option>
-        <option {{ $t->shipping_status == 'selesai' ? 'selected' : '' }} value="selesai">Selesai</option>
-    </select>
-</form>
+                    <!-- Status transaksi -->
+                    <td class="border border-gray-300 px-4 py-2">
+                        @if ($t->purchase_method === 'pickup')
+                            <span class="text-green-600 font-semibold">Selesai</span>
+                        @else
+                            <form action="{{ route('admin.transactions.update', $t->id) }}" method="POST">
+                                @csrf
+                                @method('PATCH')
+                                <select name="status" onchange="this.form.submit()" class="border rounded px-2 py-1">
+                                    <option value="diproses" {{ $t->status == 'diproses' ? 'selected' : '' }}>Diproses</option>
+                                    <option value="dikirim" {{ $t->status == 'dikirim' ? 'selected' : '' }}>Dikirim</option>
+                                    <option value="selesai" {{ $t->status == 'selesai' ? 'selected' : '' }}>Selesai</option>
+                                </select>
+                            </form>
+                        @endif
+                    </td>
 
+                    <!-- Status pengiriman -->
+                    <td class="border border-gray-300 px-4 py-2">
+                        @if ($t->purchase_method === 'delivery')
+                            <form action="{{ route('admin.transactions.updateShippingStatus', $t->id) }}" method="POST">
+                                @csrf
+                                <select name="shipping_status" onchange="this.form.submit()" class="border rounded px-2 py-1">
+                                    <option value="diproses" {{ $t->shipping_status == 'diproses' ? 'selected' : '' }}>Sedang Diproses</option>
+                                    <option value="dikirim" {{ $t->shipping_status == 'dikirim' ? 'selected' : '' }}>Dikirim</option>
+                                    <option value="selesai" {{ $t->shipping_status == 'selesai' ? 'selected' : '' }}>Selesai</option>
+                                </select>
+                            </form>
+                        @elseif ($t->purchase_method === 'pickup')
+                            <span class="text-green-600 font-semibold">Selesai</span>
+                        @else
+                            -
+                        @endif
+                    </td>
+
+                    <td class="border border-gray-300 px-4 py-2">{{ $t->delivery_address ?? '-' }}</td>
+                    <td class="border border-gray-300 px-4 py-2">
+                        <!-- Bisa tambah tombol aksi lain -->
                     </td>
                 </tr>
             @endforeach

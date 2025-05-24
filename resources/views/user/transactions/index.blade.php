@@ -1,56 +1,43 @@
+{{-- resources/views/user/transactions/index.blade.php --}}
 @extends('layouts.home')
 
 @section('content')
-
 <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold mb-4">Riwayat Transaksi</h1>
-
-    @if (session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <span class="block sm:inline">{{ session('success') }}</span>
-        </div>
-    @endif
-
-    @if (session('error'))
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <span class="block sm:inline">{{ session('error') }}</span>
-        </div>
-    @endif
+    <h1 class="text-3xl font-bold mb-6">Riwayat Transaksi</h1>
 
     @if ($transactions->isEmpty())
-        <p class="text-gray-500">Belum ada transaksi yang dilakukan.</p>
+        <div class="text-gray-500 text-center py-10">
+            <p>Belum ada transaksi yang dilakukan.</p>
+        </div>
     @else
-        <div class="space-y-4">
+        <div class="space-y-6">
             @foreach ($transactions as $transaction)
-                <div class="bg-white p-4 rounded shadow {{ $transaction->status == 'paid' ? 'border-l-4 border-green-500' : 'border-l-4 border-yellow-500' }}">
-                    <h2 class="text-xl font-semibold">Transaksi #{{ $transaction->id }}</h2>
-                    <p>Status: 
-                        @if($transaction->status == 'paid')
-                            <span class="text-green-600 font-semibold">LUNAS</span>
-                        @else
-                            <span class="text-red-600">Belum Dibayar</span>
-                        @endif
-                    </p>
-                    <p>Total Harga: Rp {{ number_format($transaction->total_price) }}</p>
-                    <p>Tanggal: {{ $transaction->created_at->format('d M Y H:i') }}</p>
-
-                    <!-- Status Pengiriman -->
-                    <div class="mt-2">
-<p>Status Pengiriman: 
-    @if ($transaction->purchase_method === 'delivery')
-        <span class="text-blue-600">{{ ucfirst($transaction->shipping_status) }}</span>
-    @else
-        <span class="text-purple-600">{{ 'Ambil di Tempat' }}</span>
-    @endif
-</p>
-
+                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-xl font-semibold">Transaksi #{{ $transaction->id }}</h2>
+                        <span class="text-sm bg-green-100 text-green-700 px-2 py-1 rounded font-medium">LUNAS</span>
                     </div>
-                    @if ($transaction->status == 'paid' && $transaction->products->isNotEmpty())
-                        <a href="{{ route('products.show', $transaction->products->first()->id) }}" 
-                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 inline-block mt-2">
-                            Beri Ulasan
-                        </a>
-                    @endif
+
+                    <div class="text-gray-700 space-y-1">
+                        <p><strong>Total Harga:</strong> Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</p>
+                        <p><strong>Tanggal:</strong> {{ $transaction->created_at->format('d M Y H:i') }}</p>
+                        <p><strong>Metode Pembelian:</strong> {{ $transaction->purchase_method === 'pickup' ? 'Ambil di Tempat' : 'Dikirim ke Alamat' }}</p>
+
+                        @if ($transaction->purchase_method === 'delivery')
+                            <p><strong>Alamat Pengiriman:</strong> {{ $transaction->delivery_address }}</p>
+                            <p><strong>Status Pengiriman:</strong> 
+                                @php
+                                    $status = $transaction->shipping_status ?? 'diproses';
+                                    $labels = [
+                                        'diproses' => 'Sedang Diproses',
+                                        'dikirim' => 'Sedang Dikirim',
+                                        'selesai' => 'Selesai'
+                                    ];
+                                @endphp
+                                <span class="font-semibold">{{ $labels[$status] ?? $status }}</span>
+                            </p>
+                        @endif
+                    </div>
                 </div>
             @endforeach
         </div>

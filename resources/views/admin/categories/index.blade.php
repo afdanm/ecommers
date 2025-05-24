@@ -16,30 +16,26 @@
         </thead>
         <tbody>
             @foreach($categories as $category)
-                <tr>
-                    <td class="px-6 py-4 border-b">{{ $category->id }}</td>
-<td class="px-6 py-4 border-b">
-    <a href="{{ route('admin.products.index', ['category_id' => $category->id]) }}" class="text-blue-600 hover:underline">
-        {{ $category->name }}
-    </a>
-</td>
+               <tr onclick="window.location='{{ route('admin.products.index', ['category_id' => $category->id]) }}'" class="cursor-pointer hover:bg-gray-100 transition">
+    <td class="px-6 py-4 border-b">{{ $category->id }}</td>
+    <td class="px-6 py-4 border-b">{{ $category->name }}</td>
+    <td class="px-6 py-4 border-b">
+        @if($category->foto)
+            <img src="{{ asset('storage/' . $category->foto) }}" alt="Gambar Kategori" class="w-32 h-32 object-cover">
+        @else
+            <p>Gambar tidak tersedia</p>
+        @endif
+    </td>
+    <td class="px-6 py-4 border-b">
+        <a href="{{ route('admin.categories.edit', $category->id) }}" class="text-yellow-500 hover:text-yellow-600">Edit</a> |
+        <form action="{{ route('admin.categories.destroy', $category->id) }}" method="POST" style="display:inline;">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="text-red-500 hover:text-red-600">Hapus</button>
+        </form>
+    </td>
+</tr>
 
-                    <td class="px-6 py-4 border-b">
-                        @if($category->foto)
-                        <img src="{{ asset('storage/' . $category->foto) }}" alt="Gambar Kategori" class="w-32 h-32 object-cover">
-                    @else
-                        <p>Gambar tidak tersedia</p>
-                    @endif                    
-                    </td>
-                    <td class="px-6 py-4 border-b">
-                        <a href="{{ route('admin.categories.edit', $category->id) }}" class="text-yellow-500 hover:text-yellow-600">Edit</a> |
-                        <form action="{{ route('admin.categories.destroy', $category->id) }}" method="POST" style="display:inline;">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-red-500 hover:text-red-600">Hapus</button>
-                        </form>
-                    </td>
-                </tr>
             @endforeach
         </tbody>
     </table>

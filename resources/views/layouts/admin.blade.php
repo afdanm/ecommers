@@ -35,6 +35,7 @@
         Pesanan
     </a>
 </li>
+
                 <li class="mb-4">
                   <a href="{{ route('admin.reports.sales') }}"
    class="flex items-center text-gray-300 hover:text-white">

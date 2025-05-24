@@ -20,7 +20,7 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @foreach ($products as $product)
             <a href="{{ route('products.show', $product->id) }}" class="border rounded p-4 hover:shadow flex flex-col">
-                <img src="{{ asset('storage/' . $product->photo) }}" alt="{{ $product->name }}" class="h-32 w-full object-cover mb-2">
+                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="h-32 w-full object-cover mb-2">
                 <h2 class="font-semibold">{{ $product->name }}</h2>
                 <p class="text-sm text-gray-500">{{ $product->category->name }}</p>
                 

@@ -13,12 +13,10 @@ class ProductController extends Controller
     {
         $query = Product::with('category', 'reviews', 'sizes');
 
-        // Filter berdasarkan kategori jika ada
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        // Filter berdasarkan nama produk
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
@@ -32,6 +30,20 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load(['category', 'sizes', 'reviews.user']);
-        return view('user.products.show', compact('product'));
+        
+        // Prepare availableSizes array with stock info for the view
+        $availableSizes = $product->sizes->map(function ($size) use ($product) {
+            return [
+                'id' => $size->id,
+                'name' => $size->name,
+                'stock' => $size->pivot->stock,
+                'available' => $size->pivot->stock > 0,
+            ];
+        });
+
+        // Total stock if product has no size
+        $total_stock = $product->sizes->sum('pivot.stock') ?: $product->stock;
+
+        return view('user.products.show', compact('product', 'availableSizes', 'total_stock'));
     }
 }

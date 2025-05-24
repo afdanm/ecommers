@@ -8,64 +8,49 @@ use App\Models\Transaction;
 
 class AdminTransactionController extends Controller
 {
-    // Menampilkan daftar transaksi
     public function index()
     {
-        // Mengambil transaksi dengan relasi user dan mengurutkannya berdasarkan tanggal terbaru
         $transactions = Transaction::with('user')->latest()->get();
-
         return view('admin.transactions.index', compact('transactions'));
     }
 
-    // Mengupdate status transaksi
-public function update(Request $request, $id)
-{
-    $request->validate([
-        'shipping_status' => 'required|in:diproses,dikirim,selesai'
-    ]);
-
-    $transaction = Transaction::findOrFail($id);
-
-    $transaction->update([
-        'shipping_status' => $request->shipping_status
-    ]);
-
-    return redirect()->route('admin.transactions.index')->with('success', 'Status pengiriman diperbarui.');
-}
-
-
-    // Mengupdate status pengiriman transaksi
-    public function updateStatus(Request $request, $id)
+    // Update status transaksi (status)
+    public function update(Request $request, $id)
     {
-        // Validasi input status pengiriman
         $request->validate([
-            'status' => 'required|in:diproses,dikirim,selesai'
+            'status' => 'required|in:diproses,dikirim,selesai',
         ]);
 
-        // Mencari transaksi berdasarkan ID
         $transaction = Transaction::findOrFail($id);
 
-        // Update status pengiriman
-        $transaction->update([
-            'status' => $request->status
-        ]);
+        // Kalau metode pickup, jangan update status manual via form
+        if ($transaction->purchase_method === 'pickup') {
+            return redirect()->route('admin.transactions.index')->with('error', 'Transaksi pickup otomatis selesai dan tidak bisa diubah.');
+        }
 
-        // Kirim notifikasi sukses ke halaman admin
-        return redirect()->route('admin.transactions.index')->with('success', 'Status pengiriman transaksi diperbarui.');
+        $transaction->status = $request->status;
+        $transaction->save();
+
+        return redirect()->route('admin.transactions.index')->with('success', 'Status transaksi diperbarui.');
     }
 
-    // Update status pengiriman
-public function updateShippingStatus(Request $request, $id)
-{
-    $request->validate([
-        'shipping_status' => 'required|in:diproses,dikirim,selesai'
-    ]);
+    // Update status pengiriman (shipping_status)
+    public function updateShippingStatus(Request $request, $id)
+    {
+        $request->validate([
+            'shipping_status' => 'required|in:diproses,dikirim,selesai',
+        ]);
 
-    $transaction = Transaction::findOrFail($id);
-    $transaction->shipping_status = $request->shipping_status;
-    $transaction->save();
+        $transaction = Transaction::findOrFail($id);
 
-    return redirect()->route('admin.transactions.index')->with('success', 'Status pengiriman diperbarui.');
-}
+        // Shipping status hanya untuk delivery
+        if ($transaction->purchase_method !== 'delivery') {
+            return redirect()->route('admin.transactions.index')->with('error', 'Status pengiriman hanya untuk metode delivery.');
+        }
 
+        $transaction->shipping_status = $request->shipping_status;
+        $transaction->save();
+
+        return redirect()->route('admin.transactions.index')->with('success', 'Status pengiriman diperbarui.');
+    }
 }

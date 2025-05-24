@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Cart;
-use App\Models\Size;
 use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
@@ -14,13 +13,10 @@ class CartController extends Controller
     public function index()
     {
         $carts = Cart::with(['product', 'size'])->where('user_id', Auth::id())->get();
+
         $cartCount = $carts->count();
-        
-        // Calculate total price
-        $totalPrice = $carts->sum(function($cart) {
-            return $cart->product->price * $cart->quantity;
-        });
-        
+        $totalPrice = $carts->sum(fn($cart) => $cart->product->price * $cart->quantity);
+
         return view('user.cart.index', compact('carts', 'cartCount', 'totalPrice'));
     }
 
@@ -31,10 +27,10 @@ class CartController extends Controller
             'size_id' => 'nullable|exists:sizes,id'
         ]);
 
-        // Check stock based on size or general stock
-        if ($request->has('size_id')) {
-            $size = $product->sizes()->where('size_id', $request->size_id)->first();
-            if (!$size || $size->pivot->stock < $request->qty) {
+        // Stock check
+        if ($request->size_id) {
+            $sizeStock = $product->sizes()->where('size_id', $request->size_id)->first()->pivot->stock;
+            if ($sizeStock < $request->qty) {
                 return back()->with('error', 'Stok tidak mencukupi untuk ukuran yang dipilih!');
             }
         } else {
@@ -43,24 +39,22 @@ class CartController extends Controller
             }
         }
 
-        // Check if product already in cart with same size
+        // Check existing cart
         $existingCart = Cart::where('user_id', Auth::id())
-                          ->where('product_id', $product->id)
-                          ->where('size_id', $request->size_id)
-                          ->first();
+            ->where('product_id', $product->id)
+            ->where('size_id', $request->size_id)
+            ->first();
 
         if ($existingCart) {
             $newQty = $existingCart->quantity + $request->qty;
-            
-            // Check stock again for existing cart item
-            $maxQty = $request->has('size_id') 
+            $maxQty = $request->size_id
                 ? $product->sizes()->where('size_id', $request->size_id)->first()->pivot->stock
                 : $product->stock;
-                
+
             if ($newQty > $maxQty) {
                 return back()->with('error', 'Jumlah melebihi stok yang tersedia!');
             }
-            
+
             $existingCart->update(['quantity' => $newQty]);
         } else {
             Cart::create([
@@ -74,33 +68,64 @@ class CartController extends Controller
         return redirect()->route('cart.index')->with('success', 'Produk berhasil ditambahkan ke keranjang!');
     }
 
-    public function update(Request $request, Cart $cart)
-    {
-        $request->validate([
-            'quantity' => 'required|integer|min:1'
-        ]);
+  public function update(Request $request, Cart $cart)
+{
+    $request->validate([
+        'quantity' => 'required|integer|min:1'
+    ]);
 
-        // Check stock
-        $maxQty = $cart->size_id 
-            ? $cart->product->sizes()->where('size_id', $cart->size_id)->first()->pivot->stock
-            : $cart->product->stock;
-
-        if ($request->quantity > $maxQty) {
-            return back()->with('error', 'Jumlah melebihi stok yang tersedia!');
-        }
-
-        $cart->update(['quantity' => $request->quantity]);
-
-        return back()->with('success', 'Keranjang berhasil diperbarui!');
+    // Pastikan cart milik user yang sedang login
+    if ($cart->user_id !== auth()->id()) {
+        abort(403);
     }
+
+    $quantity = (int) $request->quantity;
+
+    // Ambil stok produk, apakah berdasarkan size atau produk biasa
+    $stockTotal = $cart->size_id
+        ? $cart->product->sizes()->where('size_id', $cart->size_id)->first()->pivot->stock
+        : $cart->product->stock;
+
+    // Hitung quantity produk yang sudah ada di cart user selain cart ini
+    $cartQtyOther = Cart::where('user_id', auth()->id())
+        ->where('product_id', $cart->product_id)
+        ->when($cart->size_id, function($q) use ($cart) {
+            return $q->where('size_id', $cart->size_id);
+        }, function($q) {
+            return $q->whereNull('size_id');
+        })
+        ->where('id', '!=', $cart->id)
+        ->sum('quantity');
+
+    // Stok yang tersedia setelah dikurangi quantity lain di cart
+    $stockAvailable = $stockTotal - $cartQtyOther;
+
+    // Validasi stok
+    if ($quantity > $stockAvailable) {
+        return back()->with('error', 'Jumlah melebihi stok yang tersedia!');
+    }
+
+    // Update quantity di cart
+    $cart->update(['quantity' => $quantity]);
+
+    // Optional: pesan beda untuk tambah atau kurang
+    $action = $request->input('action');
+    if ($action == 'increment') {
+        $msg = 'Jumlah produk berhasil ditambah';
+    } elseif ($action == 'decrement') {
+        $msg = 'Jumlah produk berhasil dikurangi';
+    } else {
+        $msg = 'Keranjang berhasil diperbarui';
+    }
+
+    return back()->with('success', $msg);
+}
+
 
     public function remove(Cart $cart)
     {
         $cart->delete();
-        $cartCount = Cart::where('user_id', auth()->id())->count();
-    
-        return redirect()->route('cart.index')
-            ->with('cartCount', $cartCount)
-            ->with('success', 'Produk berhasil dihapus dari keranjang!');
+
+        return redirect()->route('cart.index')->with('success', 'Produk berhasil dihapus dari keranjang!');
     }
 }

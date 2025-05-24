@@ -65,10 +65,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('categories', CategoryController::class);
         
         // Transaksi Admin Routes
-        Route::get('transactions', [AdminTransactionController::class, 'index'])->name('transactions.index');
-        Route::patch('transactions/{id}', [AdminTransactionController::class, 'update'])->name('transactions.update');
-        Route::patch('transactions/{id}/status', [AdminTransactionController::class, 'updateStatus'])->name('transactions.updateStatus');
-
+    Route::get('transactions', [AdminTransactionController::class, 'index'])->name('transactions.index');
+    Route::patch('transactions/{id}', [AdminTransactionController::class, 'update'])->name('transactions.update');  // update status transaksi
+    Route::post('transactions/{id}/shipping-status', [AdminTransactionController::class, 'updateShippingStatus'])->name('transactions.updateShippingStatus');  // update status pengiriman
         // Laporan Penjualan
         Route::get('reports/sales', [SalesReportController::class, 'index'])->name('reports.sales');
         Route::get('reports/sales/export', [SalesReportController::class, 'exportExcel'])->name('reports.sales.export');
@@ -92,19 +91,21 @@ Route::middleware('auth')->group(function () {
         Route::prefix('cart')->name('cart.')->group(function () {
             Route::post('/{product}/add', [CartController::class, 'addToCart'])->name('add');
             Route::get('/', [CartController::class, 'index'])->name('index');
+          Route::put('/update/{cart}', [CartController::class, 'update'])->name('update');
             Route::delete('/remove/{cart}', [CartController::class, 'remove'])->name('remove');
         });
 
         // Checkout Routes
-        Route::prefix('checkout')->name('checkout.')->group(function () {
-            Route::get('/', [CheckoutController::class, 'index'])->name('index');
-            Route::post('/', [CheckoutController::class, 'process'])->name('process');
+       Route::prefix('checkout')->name('checkout.')->group(function () {
+    Route::get('/', [CheckoutController::class, 'index'])->name('index'); // Tampilkan halaman checkout, list cart + form purchase_method + alamat
+    Route::post('/', [CheckoutController::class, 'process'])->name('process'); // Proses form checkout, generate snap token, tampilkan halaman payment
 
-            // Ini cukup success dan error aja
-            Route::get('/success', [CheckoutController::class, 'success'])->name('success');
-            Route::get('/error', [CheckoutController::class, 'error'])->name('error');
-            Route::get('/retry/{transaction}', [CheckoutController::class, 'retry'])->name('retry');
-        });
+    Route::get('/success', [CheckoutController::class, 'paymentSuccess'])->name('success'); // Halaman redirect pas pembayaran sukses, simpan data transaksi di DB
+    Route::get('/error', [CheckoutController::class, 'error'])->name('error'); // Halaman pembayaran gagal/ditolak
+
+    Route::get('/retry/{transaction}', [CheckoutController::class, 'retry'])->name('retry'); // (Opsional) Retry pembayaran untuk transaksi gagal
+});
+
 
         // Verify Payment Route
         Route::post('/checkout/verify-payment', [CheckoutController::class, 'verifyPayment'])->name('checkout.verify-payment');

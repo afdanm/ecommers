@@ -13,6 +13,7 @@ class Cart extends Model
         'user_id',
         'product_id',
         'quantity',
+        'size_id',
     ];
 
     // Relasi ke Product
@@ -26,4 +27,9 @@ class Cart extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function size()
+{
+    return $this->belongsTo(Size::class);
+}
+
 }
