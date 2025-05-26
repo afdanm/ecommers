@@ -15,10 +15,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->integer('rating')->unsigned()->comment('Rating dari 1-5');
-            $table->text('review')->nullable()->comment('Ulasan produk');
-            $table->boolean('is_visible')->default(true)->comment('Kolom baru untuk visibilitas ulasan');
+            $table->foreignId('transaction_id')->constrained()->onDelete('cascade');
+            $table->integer('rating')->unsigned()->between(1, 5);
+            $table->text('comment')->nullable();
             $table->timestamps();
+            
+            $table->unique(['user_id', 'product_id', 'transaction_id']);
         });
     }
 

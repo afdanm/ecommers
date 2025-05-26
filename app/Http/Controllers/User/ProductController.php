@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\Category;
 
@@ -28,22 +29,53 @@ class ProductController extends Controller
     }
 
     public function show(Product $product)
-    {
-        $product->load(['category', 'sizes', 'reviews.user']);
-        
-        // Prepare availableSizes array with stock info for the view
-        $availableSizes = $product->sizes->map(function ($size) use ($product) {
-            return [
-                'id' => $size->id,
-                'name' => $size->name,
-                'stock' => $size->pivot->stock,
-                'available' => $size->pivot->stock > 0,
-            ];
-        });
+{
+    $product->load(['category', 'sizes', 'reviews.user']);
+    
+    $availableSizes = $product->sizes->map(function ($size) use ($product) {
+        return [
+            'id' => $size->id,
+            'name' => $size->name,
+            'stock' => $size->pivot->stock,
+            'available' => $size->pivot->stock > 0,
+        ];
+    });
 
-        // Total stock if product has no size
-        $total_stock = $product->sizes->sum('pivot.stock') ?: $product->stock;
+    $total_stock = $product->sizes->sum('pivot.stock') ?: $product->stock;
 
-        return view('user.products.show', compact('product', 'availableSizes', 'total_stock'));
+    // Check if review mode is active
+    $canReview = false;
+    $transactionId = null;
+    $rating = null;
+    
+    if(request()->has('review') && request()->has('transaction_id')) {
+        $transaction = Transaction::where('id', request('transaction_id'))
+            ->where('user_id', auth()->id())
+            ->first();
+            
+        if($transaction && $transaction->products->contains($product->id)) {
+            $canReview = true;
+            $transactionId = $transaction->id;
+            
+            // Check if user already reviewed this product from this transaction
+            $existingReview = $product->reviews
+                ->where('user_id', auth()->id())
+                ->where('transaction_id', $transaction->id)
+                ->first();
+                
+            if($existingReview) {
+                $canReview = false;
+            }
+        }
     }
+
+    return view('user.products.show', compact(
+        'product', 
+        'availableSizes', 
+        'total_stock',
+        'canReview',
+        'transactionId',
+        'rating'
+    ));
+}
 }

@@ -87,6 +87,12 @@ Route::middleware('auth')->group(function () {
             Route::put('/update', [ProfileController::class, 'update'])->name('update');
         });
 
+        // Di dalam group user
+Route::prefix('products/{product}/reviews')->name('products.reviews.')->group(function () {
+    Route::get('/', [ReviewController::class, 'index'])->name('index');
+    Route::post('/', [ReviewController::class, 'store'])->name('store');
+});
+
         // Cart Routes (Keranjang)
         Route::prefix('cart')->name('cart.')->group(function () {
             Route::post('/{product}/add', [CartController::class, 'addToCart'])->name('add');

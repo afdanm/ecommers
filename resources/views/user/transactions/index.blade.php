@@ -21,11 +21,13 @@
                     <div class="text-gray-700 space-y-1">
                         <p><strong>Total Harga:</strong> Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</p>
                         <p><strong>Tanggal:</strong> {{ $transaction->created_at->format('d M Y H:i') }}</p>
-                        <p><strong>Metode Pembelian:</strong> {{ $transaction->purchase_method === 'pickup' ? 'Ambil di Tempat' : 'Dikirim ke Alamat' }}</p>
+                        <p><strong>Metode Pembelian:</strong> 
+                            {{ $transaction->purchase_method === 'pickup' ? 'Ambil di Tempat' : 'Dikirim ke Alamat' }}
+                        </p>
 
                         @if ($transaction->purchase_method === 'delivery')
                             <p><strong>Alamat Pengiriman:</strong> {{ $transaction->delivery_address }}</p>
-                            <p><strong>Status Pengiriman:</strong> 
+                            <p><strong>Status Pengiriman:</strong>
                                 @php
                                     $status = $transaction->shipping_status ?? 'diproses';
                                     $labels = [
@@ -39,20 +41,40 @@
                         @endif
                     </div>
 
-                    {{-- Tombol Ulasan --}}
+                    {{-- Produk dalam transaksi --}}
                     <div class="mt-4">
-                        @php
-                            $firstProduct = $transaction->products->first();
-                        @endphp
+                        <h3 class="font-semibold mb-2">Produk:</h3>
+                        <div class="space-y-3">
+                            @foreach ($transaction->products as $product)
+                                <div class="flex items-start border-b pb-3">
+                                    <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-16 h-16 object-cover rounded mr-3">
+                                    <div class="flex-1">
+                                        <p class="font-medium">{{ $product->name }}</p>
+                                        <p class="text-sm text-gray-600">
+                                            Rp {{ number_format($product->pivot->price, 0, ',', '.') }} x {{ $product->pivot->quantity }}
+                                        </p>
+                                    </div>
 
-                        @if ($firstProduct)
-                            <a href="{{ route('products.show', $firstProduct->id) }}" 
-                               class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-                                Beri Ulasan
-                            </a>
-                        @else
-                            <span class="text-gray-400 italic">Tidak ada produk untuk ulasan</span>
-                        @endif
+                                    @php
+                                        $hasReview = $transaction->products
+                                            ->firstWhere('id', $product->id)
+                                            ->reviews
+                                            ->where('user_id', Auth::id())
+                                            ->where('transaction_id', $transaction->id)
+                                            ->count();
+                                    @endphp
+
+                                    @if (!$hasReview)
+                                        <a href="{{ route('products.show', $product) }}?review=true&transaction_id={{ $transaction->id }}" 
+                                            class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                                            Beri Ulasan
+                                        </a>
+                                    @else
+                                        <span class="text-sm text-gray-500">Sudah diulas</span>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
             @endforeach

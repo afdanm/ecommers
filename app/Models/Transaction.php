@@ -31,4 +31,9 @@ protected $fillable = [
             ->withPivot('quantity', 'price')
             ->withTimestamps();
     }
+
+    public function reviews()
+{
+    return $this->hasMany(Review::class);
+}
 }

@@ -1,5 +1,7 @@
 <?php
 
+// app/Models/Review.php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,8 +14,9 @@ class Review extends Model
     protected $fillable = [
         'user_id',
         'product_id',
+        'transaction_id',
         'rating',
-        'review',
+        'comment'
     ];
 
     public function user()
@@ -24,5 +27,10 @@ class Review extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class);
     }
 }
