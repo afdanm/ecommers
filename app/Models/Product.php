@@ -10,14 +10,30 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'category_id', 'price', 'description', 'images', 'size_type', 'stock',
+        'name',
+        'category_id',
+        'price',
+        'description',
+        'images',
+        'has_variants',
+        'weight',
+        'length',
+        'width',
+        'height',
+        'stock',
+        'variant_data'
     ];
 
     // Cast images sebagai array
     protected $casts = [
         'images' => 'array',
+        'variant_data' => 'array',
+        'has_variants' => 'boolean',
         'price' => 'decimal:2',
-       
+        'weight' => 'decimal:2',
+        'length' => 'decimal:2',
+        'width' => 'decimal:2',
+        'height' => 'decimal:2'
     ];
 
     public function getImagesAttribute($value)
@@ -72,30 +88,30 @@ class Product extends Model
             ->withTimestamps();
     }
 
-    public function sizes()
+    public function variants()
     {
-        return $this->belongsToMany(Size::class)->withPivot('stock')->withTimestamps();
+        return $this->hasMany(ProductVariant::class);
+    }
+    
+    
+
+    // Helper untuk mendapatkan nama varian
+    public function getVariant1NameAttribute()
+    {
+        return $this->variant_data['variant_names'][0] ?? 'Varian 1';
     }
 
-    // Accessor for available sizes
-    public function getAvailableSizesAttribute()
+    public function getVariant2NameAttribute()
     {
-        return $this->sizes->map(function($size) {
-            return [
-                'id' => $size->id,
-                'name' => $size->name,
-                'stock' => $size->pivot->stock,
-                'available' => $size->pivot->stock > 0
-            ];
-        })->sortBy('name');
+        return $this->variant_data['variant_names'][1] ?? 'Varian 2';
     }
 
     // Calculate total stock from all sizes
     public function getTotalStockAttribute()
     {
-        if ($this->sizes->count() > 0) {
-            return $this->sizes->sum('pivot.stock');
+        if ($this->has_variants) {
+            return $this->variants->sum('stock');
         }
-        return $this->stock; // Fallback to single stock if no sizes
+        return $this->stock;
     }
 }
