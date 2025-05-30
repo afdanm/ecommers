@@ -10,8 +10,39 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'category_id', 'price', 'description', 'image', 'size_type', 'stock',
+        'name', 'category_id', 'price', 'description', 'images', 'size_type', 'stock',
     ];
+
+    // Cast images sebagai array
+    protected $casts = [
+        'images' => 'array',
+        'price' => 'decimal:2',
+       
+    ];
+
+    public function getImagesAttribute($value)
+    {
+        if (empty($value)) return [];
+        return is_array($value) ? $value : json_decode($value, true) ?? [$value];
+    }
+
+    public function setImagesAttribute($value)
+    {
+        $this->attributes['images'] = is_array($value) ? json_encode($value) : $value;
+    }
+
+    // Helper method untuk get image count
+    public function getImageCountAttribute()
+    {
+        return count($this->images);
+    }
+
+    // Helper method untuk get first image
+    public function getFirstImageAttribute()
+    {
+        $images = $this->images;
+        return !empty($images) ? $images[0] : null;
+    }
 
     // Relasi ke kategori
     public function category()
@@ -67,6 +98,4 @@ class Product extends Model
         }
         return $this->stock; // Fallback to single stock if no sizes
     }
-
-    
 }

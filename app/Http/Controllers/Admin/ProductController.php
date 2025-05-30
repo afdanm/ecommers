@@ -41,50 +41,117 @@ public function create(Request $request)
 
 
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'price' => 'required|numeric',
-            'description' => 'nullable|string',
-            'image' => 'nullable|image',
-            'size_type' => 'required|in:huruf,angka',
-            'sizes' => 'required|array',
-            'sizes.*' => 'exists:sizes,id',
-            'stocks' => 'required|array',
-            'stocks.*' => 'required|integer|min:0',
-        ]);
+    // Dalam ProductController.php - method store()
+// Dalam ProductController.php - method store()
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'category_id' => 'required|exists:categories,id',
+        'price' => 'required|numeric|min:0',
+        'description' => 'nullable|string',
+        'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+        'images' => 'required|array|max:6',
+        'size_type' => 'required|in:letter,number',
+        'sizes' => 'required|array|min:1',
+        'stocks' => 'required|array',
+    ]);
 
-        // Hitung total stok
-        $totalStock = array_sum($request->stocks);
-
-        // Upload gambar jika ada
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('products', 'public');
+    // Handle multiple image uploads
+    $imagePaths = [];
+    if ($request->hasFile('images')) {
+        foreach ($request->file('images') as $image) {
+            $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $imagePath = $image->storeAs('products', $imageName, 'public');
+            $imagePaths[] = $imagePath;
         }
-
-        // Simpan produk
-        $product = Product::create([
-            'name' => $request->name,
-            'category_id' => $request->category_id,
-            'price' => $request->price,
-            'description' => $request->description,
-            'image' => $imagePath,
-            'stock' => $totalStock,
-        ]);
-
-        // Simpan ukuran dan stok ke tabel pivot
-        foreach ($request->sizes as $index => $sizeId) {
-            $product->sizes()->attach($sizeId, [
-                'stock' => $request->stocks[$index],
-            ]);
-        }
-
-return redirect()->route('admin.products.index', ['category_id' => $request->category_id])
-                 ->with('success', 'Produk berhasil ditambahkan.');
     }
+
+    // Create product
+    $product = Product::create([
+        'name' => $request->name,
+        'category_id' => $request->category_id,
+        'price' => $request->price,
+        'description' => $request->description,
+        'images' => $imagePaths, // Simpan sebagai array
+        'size_type' => $request->size_type,
+        'stock' => 0, // Will be updated after attaching sizes
+    ]);
+
+    // Attach sizes with stock
+    $totalStock = 0;
+    foreach ($request->sizes as $index => $sizeId) {
+        $stock = isset($request->stocks[$index]) ? (int)$request->stocks[$index] : 0;
+        $product->sizes()->attach($sizeId, ['stock' => $stock]);
+        $totalStock += $stock;
+    }
+
+    // Update total stock
+    $product->update(['stock' => $totalStock]);
+
+    return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan!');
+}
+
+// Method untuk update juga perlu disesuaikan
+public function update(Request $request, Product $product)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'category_id' => 'required|exists:categories,id',
+        'price' => 'required|numeric|min:0',
+        'description' => 'nullable|string',
+        'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'images' => 'array|max:6',
+        'size_type' => 'required|in:letter,number',
+        'sizes' => 'required|array|min:1',
+        'stocks' => 'required|array',
+    ]);
+
+    // Handle image updates
+    $imagePaths = $product->images ?? []; // Keep existing images
+    
+    if ($request->hasFile('images')) {
+        // Optionally delete old images
+        if (!empty($product->images)) {
+            foreach ($product->images as $oldImage) {
+                Storage::disk('public')->delete($oldImage);
+            }
+        }
+        
+        // Upload new images
+        $imagePaths = [];
+        foreach ($request->file('images') as $image) {
+            $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $imagePath = $image->storeAs('products', $imageName, 'public');
+            $imagePaths[] = $imagePath;
+        }
+    }
+
+    // Update product
+    $product->update([
+        'name' => $request->name,
+        'category_id' => $request->category_id,
+        'price' => $request->price,
+        'description' => $request->description,
+        'images' => $imagePaths,
+        'size_type' => $request->size_type,
+    ]);
+
+    // Update sizes
+    $product->sizes()->detach();
+    $totalStock = 0;
+    foreach ($request->sizes as $index => $sizeId) {
+        $stock = isset($request->stocks[$index]) ? (int)$request->stocks[$index] : 0;
+        $product->sizes()->attach($sizeId, ['stock' => $stock]);
+        $totalStock += $stock;
+    }
+
+    $product->update(['stock' => $totalStock]);
+
+    return redirect()->route('admin.products.index')->with('success', 'Produk berhasil diperbarui!');
+}
+
+
 
     public function edit($id)
     {
@@ -97,54 +164,7 @@ $numberSizes = Size::where('type', 'number')->get();
         return view('admin.products.edit', compact('product', 'categories', 'letterSizes', 'numberSizes'));
     }
 
-    public function update(Request $request, $id)
-    {
-        $product = Product::findOrFail($id);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'price' => 'required|numeric',
-            'description' => 'nullable|string',
-            'image' => 'nullable|image',
-            'size_type' => 'required|in:huruf,angka',
-            'sizes' => 'required|array',
-            'sizes.*' => 'exists:sizes,id',
-            'stocks' => 'required|array',
-            'stocks.*' => 'required|integer|min:0',
-        ]);
-
-        // Hitung total stok
-        $totalStock = array_sum($request->stocks);
-
-        // Upload gambar baru jika ada
-        if ($request->hasFile('image')) {
-            if ($product->image) {
-                Storage::disk('public')->delete($product->image);
-            }
-            $product->image = $request->file('image')->store('products', 'public');
-        }
-
-        // Update produk
-        $product->update([
-            'name' => $request->name,
-            'category_id' => $request->category_id,
-            'price' => $request->price,
-            'description' => $request->description,
-            'stock' => $totalStock,
-        ]);
-
-        // Sync ukuran dan stok
-        $syncData = [];
-        foreach ($request->sizes as $index => $sizeId) {
-            $syncData[$sizeId] = ['stock' => $request->stocks[$index]];
-        }
-        $product->sizes()->sync($syncData);
-
-       return redirect()->route('admin.products.index', ['category_id' => $request->category_id])
-                 ->with('success', 'Produk berhasil ditambahkan.');
-    }
-
+   
 public function destroy($id)
 {
     $product = Product::findOrFail($id);
