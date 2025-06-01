@@ -165,57 +165,71 @@
         </div>
     </section>
 
-    <!-- Latest Products -->
-    <section class="mb-12">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl md:text-3xl font-bold text-gray-800">Produk Terbaru</h2>
-            <a href="{{ route('products.list') }}" class="text-sm md:text-base text-blue-600 hover:text-blue-800 font-medium flex items-center">
-                Lihat Semua
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-            </a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            @foreach ($latestProducts as $product)
-                <div class="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 border border-gray-100">
-                    <a href="{{ route('products.show', $product->id) }}" class="block">
-                        <div class="aspect-square overflow-hidden relative">
-                            <img src="{{ asset('storage/' . $product->image) }}" 
-                                 alt="{{ $product->name }}" 
-                                 class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                                 loading="lazy">
-                            @if($product->created_at > now()->subDays(7))
-                                <span class="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded-full">Baru</span>
-                            @endif
-                        </div>
-                        <div class="p-4">
-                            <h3 class="font-semibold text-gray-800 mb-1 line-clamp-2">{{ $product->name }}</h3>
-                            <div class="flex justify-between items-center">
-                                <p class="text-blue-600 font-bold">Rp {{ number_format($product->price, 0, ',', '.') }}</p>
-                                @if($product->reviews->count() > 0)
-                                    <div class="flex items-center text-amber-400">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                        </svg>
-                                        <span class="text-xs ml-1 text-gray-600">{{ number_format($product->reviews->avg('rating'), 1) }}</span>
-                                    </div>
+   <!-- Latest Products -->
+<section class="mb-12">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-800">Produk Terbaru</h2>
+        <a href="{{ route('products.list') }}" class="text-sm md:text-base text-blue-600 hover:text-blue-800 font-medium flex items-center">
+            Lihat Semua
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        @foreach ($latestProducts as $product)
+            <a href="{{ route('products.show', $product->id) }}" class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition border border-gray-100 block">
+                <div class="aspect-square overflow-hidden relative">
+                    
+                    @php
+                        $images = is_string($product->images) ? json_decode($product->images, true) : $product->images;
+                        $firstImage = is_array($images) && !empty($images) ? $images[0] : 'products/default.jpg';
+                    @endphp
+                    <img src="{{ asset('storage/' . $firstImage) }}" 
+                         alt="{{ $product->name }}" 
+                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                         loading="lazy"
+                         onerror="this.src='{{ asset('images/default-product.jpg') }}'">
+                </div>
+                <div class="p-4">
+                    <h3 class="font-semibold text-gray-800 mb-1 line-clamp-2">{{ $product->name }}</h3>
+                    <div class="flex justify-between items-center">
+                        @if($product->has_variants && $product->variants->count() > 0)
+                            @php
+                                $minPrice = $product->variants->min('price');
+                                $maxPrice = $product->variants->max('price');
+                            @endphp
+                            <p class="text-blue-600 font-bold">
+                                Rp {{ number_format($minPrice, 0, ',', '.') }}
+                                @if($minPrice != $maxPrice)
+                                    - {{ number_format($maxPrice, 0, ',', '.') }}
                                 @endif
+                            </p>
+                        @else
+                            <p class="text-blue-600 font-bold">Rp {{ number_format($product->price ?? 0, 0, ',', '.') }}</p>
+                        @endif
+
+                        
+
+                        @if($product->reviews && $product->reviews->count() > 0)
+                            <div class="flex items-center text-amber-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                <span class="text-xs ml-1 text-gray-600">{{ number_format($product->reviews->avg('rating'), 1) }}</span>
                             </div>
-                        </div>
-                    </a>
-                    <div class="px-4 pb-4">
-                        <button class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 rounded-lg text-sm font-medium transition duration-300 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                            Tambah ke Keranjang
-                        </button>
+                        @endif
                     </div>
                 </div>
-            @endforeach
-        </div>
-    </section>
+            </a>
+        @endforeach
+    </div>
+</section>
+
+    
+    
+    
 
     <!-- Featured Collection -->
     <section class="mb-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 md:p-8">

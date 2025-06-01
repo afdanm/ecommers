@@ -5,33 +5,60 @@
     <div class="grid md:grid-cols-2 gap-8">
         {{-- Product Image --}}
         <div>
-            <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-full max-h-[500px] object-cover rounded shadow">
+            @if(count($productImages) > 1)
+                <!-- Image Slider for multiple images -->
+                <div class="swiper product-image-slider">
+                    <div class="swiper-wrapper">
+                        @foreach($productImages as $image)
+                            <div class="swiper-slide">
+                                <img src="{{ asset('storage/' . $image) }}" alt="{{ $product->name }}" class="w-full max-h-[500px] object-cover rounded shadow">
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="swiper-pagination"></div>
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
+                </div>
+            @else
+                <!-- Single image display -->
+                <img src="{{ asset('storage/' . ($productImages[0] ?? $product->image)) }}" alt="{{ $product->name }}" class="w-full max-h-[500px] object-cover rounded shadow">
+            @endif
         </div>
 
         {{-- Product Details --}}
         <div class="space-y-5">
             <h1 class="text-3xl font-bold">{{ $product->name }}</h1>
             <p class="text-sm text-gray-500">Kategori: <span class="font-semibold">{{ $product->category->name }}</span></p>
-            <p class="text-green-600 text-2xl font-bold">Rp {{ number_format($product->price) }}</p>
+            
+            @if($product->has_variants && $minPrice != $maxPrice)
+                <p class="text-green-600 text-2xl font-bold">Rp {{ number_format($minPrice) }} - Rp {{ number_format($maxPrice) }}</p>
+            @else
+                <p class="text-green-600 text-2xl font-bold">Rp {{ number_format($product->price ?? $minPrice) }}</p>
+            @endif
+            
             <p class="text-gray-700">{{ $product->description }}</p>
 
-            {{-- Size Selection --}}
-            @if($availableSizes->count() > 0)
+            {{-- Variant Selection --}}
+            @if($product->has_variants && count($availableVariants) > 0)
                 <div>
-                    <p class="block text-sm font-medium text-gray-700 mb-1">Pilih Ukuran</p>
-                    <input type="hidden" name="size_id" id="selectedSizeId" required>
+                    <p class="block text-sm font-medium text-gray-700 mb-1">Pilih Varian</p>
+                    <input type="hidden" name="variant_id" id="selectedVariantId" required>
                     <div class="flex flex-wrap gap-2">
-                        @foreach($availableSizes as $size)
+                        @foreach($availableVariants as $variant)
                             <button type="button"
-                                data-size-id="{{ $size['id'] }}"
-                                class="size-option px-3 py-1 rounded-full text-sm font-medium border {{ $size['available'] ? 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200' : 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed line-through' }}"
-                                {{ !$size['available'] ? 'disabled' : '' }}>
-                                {{ $size['name'] }}
-                                <span class="text-xs ml-1 text-gray-500">({{ $size['stock'] }})</span>
+                                data-variant-id="{{ $variant['id'] }}"
+                                data-stock="{{ $variant['stock'] }}"
+                                class="variant-option px-3 py-1 rounded-full text-sm font-medium border {{ $variant['available'] ? 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200' : 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed line-through' }}"
+                                {{ !$variant['available'] ? 'disabled' : '' }}>
+                                {{ $variant['variant_1'] }}
+                                @if($variant['variant_2'])
+                                    / {{ $variant['variant_2'] }}
+                                @endif
+                                <span class="text-xs ml-1 text-gray-500">({{ $variant['stock'] }})</span>
                             </button>
                         @endforeach
                     </div>
-                    <p id="sizeError" class="text-red-500 text-sm hidden mt-1">Pilih ukuran terlebih dahulu</p>
+                    <p id="variantError" class="text-red-500 text-sm hidden mt-1">Pilih varian terlebih dahulu</p>
                 </div>
             @else
                 <p class="text-sm text-gray-600">Stok: <strong>{{ $total_stock }}</strong></p>
@@ -41,7 +68,7 @@
             @auth
                 <form action="{{ route('cart.add', $product->id) }}" method="POST" class="space-y-4" id="cartForm">
                     @csrf
-                    <input type="hidden" name="size_id" id="formSizeId" required>
+                    <input type="hidden" name="variant_id" id="formVariantId" value="{{ $product->has_variants ? '' : 'none' }}">
 
                     <div class="flex items-center gap-4">
                         <div class="flex items-center border border-gray-300 rounded">
@@ -77,6 +104,30 @@
         </div>
     </div>
 
+    {{-- Related Products --}}
+    @if($relatedProducts->count() > 0)
+        <div class="mt-12">
+            <h2 class="text-2xl font-bold mb-6">Produk Terkait</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                @foreach($relatedProducts as $related)
+                    <div class="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                        <a href="{{ route('products.show', $related->id) }}">
+                            @php
+                                $relatedImages = is_string($related->images) ? json_decode($related->images, true) : $related->images;
+                                $firstImage = is_array($relatedImages) && !empty($relatedImages) ? $relatedImages[0] : $related->image;
+                            @endphp
+                            <img src="{{ asset('storage/' . $firstImage) }}" alt="{{ $related->name }}" class="w-full h-40 object-cover">
+                            <div class="p-3">
+                                <h3 class="font-semibold text-sm line-clamp-2">{{ $related->name }}</h3>
+                                <p class="text-green-600 font-bold mt-1">Rp {{ number_format($related->price) }}</p>
+                            </div>
+                        </a>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Review Section --}}
     <div class="mt-12">
         <h2 class="text-2xl font-bold mb-4">Ulasan Produk</h2>
@@ -88,15 +139,15 @@
                     @for($i = 1; $i <= 5; $i++)
                         @if($i <= floor($product->averageRating()))
                             <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="..." />
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                             </svg>
                         @elseif($i == ceil($product->averageRating()) && $product->averageRating() - floor($product->averageRating()) > 0)
                             <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="..." />
+                                <path d="M10 1l2.5 6.5H19l-5 4.5 1.5 6.5-6-4.5-6 4.5 1.5-6.5-5-4.5h6.5L10 1z"/>
                             </svg>
                         @else
                             <svg class="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="..." />
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                             </svg>
                         @endif
                     @endfor
@@ -117,7 +168,7 @@
                             <div class="flex ml-2">
                                 @for($i = 1; $i <= 5; $i++)
                                     <svg class="w-4 h-4 {{ $i <= $review->rating ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="..." />
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                     </svg>
                                 @endfor
                             </div>
@@ -137,86 +188,110 @@
         @endif
 
         {{-- Review Form --}}
-       {{-- Review Form --}}
-@auth
-@if($canReview)
-    <div class="mt-8 bg-gray-50 p-6 rounded-lg">
-        <h3 class="text-lg font-semibold mb-4">Beri Ulasan</h3>
-        <form action="{{ route('products.review.store', $product) }}" method="POST">
-            @csrf
-            <input type="hidden" name="transaction_id" value="{{ $transactionId }}">
+        @auth
+            @if($canReview)
+                <div class="mt-8 bg-gray-50 p-6 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-4">Beri Ulasan</h3>
+                    <form action="{{ route('products.review.store', $product) }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="transaction_id" value="{{ $transactionId }}">
 
-            <div class="mb-4">
-                <label for="rating" class="block text-gray-700 mb-2">Rating</label>
-                <select name="rating" id="rating" required
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('rating') border-red-500 @enderror">
-                    <option value="" disabled selected>Pilih rating</option>
-                    @for($i = 1; $i <= 5; $i++)
-                        <option value="{{ $i }}" {{ (old('rating') == $i || (isset($rating) && $rating == $i)) ? 'selected' : '' }}>
-                            {{ $i }} {{ Str::plural('Bintang', $i) }}
-                        </option>
-                    @endfor
-                </select>
-                @error('rating')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
+                        <div class="mb-4">
+                            <label for="rating" class="block text-gray-700 mb-2">Rating</label>
+                            <select name="rating" id="rating" required
+                                class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('rating') border-red-500 @enderror">
+                                <option value="" disabled selected>Pilih rating</option>
+                                @for($i = 1; $i <= 5; $i++)
+                                    <option value="{{ $i }}" {{ (old('rating') == $i || (isset($rating) && $rating == $i)) ? 'selected' : '' }}>
+                                        {{ $i }} {{ Str::plural('Bintang', $i) }}
+                                    </option>
+                                @endfor
+                            </select>
+                            @error('rating')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-            <div class="mb-4">
-                <label for="comment" class="block text-gray-700 mb-2">Ulasan</label>
-                <textarea name="comment" id="comment" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">{{ old('comment') }}</textarea>
-            </div>
+                        <div class="mb-4">
+                            <label for="comment" class="block text-gray-700 mb-2">Ulasan</label>
+                            <textarea name="comment" id="comment" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">{{ old('comment') }}</textarea>
+                        </div>
 
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                Kirim Ulasan
-            </button>
-        </form>
-    </div>
-@endif
-@endauth
-
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            Kirim Ulasan
+                        </button>
+                    </form>
+                </div>
+            @endif
+        @endauth
     </div>
 </div>
 @endsection
 
 @section('scripts')
+<script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
 <script>
-    function setRating(rating) {
-        document.getElementById('rating-input').value = rating;
-        const stars = document.querySelectorAll('.rating-star svg');
-        stars.forEach((star, index) => {
-            if (index < rating) {
-                star.classList.remove('text-gray-300');
-                star.classList.add('text-yellow-400');
-            } else {
-                star.classList.remove('text-yellow-400');
-                star.classList.add('text-gray-300');
-            }
+    // Initialize image slider if multiple images exist
+    @if(count($productImages) > 1)
+        const swiper = new Swiper('.product-image-slider', {
+            loop: true,
+            spaceBetween: 10,
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            },
         });
-    }
+    @endif
 
-    const sizeButtons = document.querySelectorAll('.size-option');
-    const selectedSizeIdInput = document.getElementById('formSizeId');
-    const sizeError = document.getElementById('sizeError');
+    // Variant selection logic
+    const variantButtons = document.querySelectorAll('.variant-option');
+    const selectedVariantIdInput = document.getElementById('formVariantId');
+    const variantError = document.getElementById('variantError');
 
-    sizeButtons.forEach(button => {
+    variantButtons.forEach(button => {
         button.addEventListener('click', () => {
             if (button.disabled) return;
-            sizeButtons.forEach(b => b.classList.remove('border-blue-600', 'bg-blue-300'));
+            
+            // Remove active class from all buttons
+            variantButtons.forEach(b => {
+                b.classList.remove('border-blue-600', 'bg-blue-300');
+                b.classList.add('border-blue-300', 'bg-blue-100');
+            });
+            
+            // Add active class to clicked button
+            button.classList.remove('border-blue-300', 'bg-blue-100');
             button.classList.add('border-blue-600', 'bg-blue-300');
-            selectedSizeIdInput.value = button.dataset.sizeId;
-            sizeError.classList.add('hidden');
+            
+            // Update hidden input value
+            selectedVariantIdInput.value = button.dataset.variantId;
+            
+            // Update max quantity based on variant stock
+            const qtyInput = document.querySelector('input[name="qty"]');
+            qtyInput.max = button.dataset.stock;
+            
+            // Hide error if shown
+            variantError.classList.add('hidden');
         });
     });
 
+    // Cart form validation
     const cartForm = document.getElementById('cartForm');
     cartForm.addEventListener('submit', e => {
-        if (selectedSizeIdInput && !selectedSizeIdInput.value && sizeButtons.length > 0) {
+        if (selectedVariantIdInput && !selectedVariantIdInput.value && variantButtons.length > 0) {
             e.preventDefault();
-            sizeError.classList.remove('hidden');
+            variantError.classList.remove('hidden');
+            window.scrollTo({
+                top: variantError.offsetTop - 100,
+                behavior: 'smooth'
+            });
         }
     });
 
+    // Quantity increment/decrement buttons
     document.querySelectorAll('.increment-btn').forEach(button => {
         button.addEventListener('click', () => {
             const input = button.previousElementSibling;
@@ -234,6 +309,7 @@
         });
     });
 
+    // Login modal functions
     function openLoginModal() {
         document.getElementById('loginModal').classList.remove('hidden');
     }
@@ -242,4 +318,25 @@
         document.getElementById('loginModal').classList.add('hidden');
     }
 </script>
+@endsection
+
+@section('styles')
+<link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+<style>
+    .swiper {
+        width: 100%;
+        height: 500px;
+    }
+    .swiper-slide {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .swiper-slide img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+</style>
 @endsection
