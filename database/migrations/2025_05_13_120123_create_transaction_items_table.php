@@ -17,7 +17,7 @@ public function up()
     $table->foreignId('product_id')->constrained()->onDelete('cascade');
     $table->integer('quantity');
     $table->decimal('price', 15, 2);
-    $table->foreignId('size_id')->nullable()->constrained('sizes');  // pastikan ini ada
+    // $table->foreignId('size_id')->nullable()->constrained('sizes');  // pastikan ini ada
     $table->timestamps();
 });
 

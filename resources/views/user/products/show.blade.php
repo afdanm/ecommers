@@ -6,12 +6,15 @@
         {{-- Product Image --}}
         <div>
             @if(count($productImages) > 1)
-                <!-- Image Slider for multiple images -->
+                <!-- Image Slider -->
                 <div class="swiper product-image-slider">
                     <div class="swiper-wrapper">
                         @foreach($productImages as $image)
                             <div class="swiper-slide">
-                                <img src="{{ asset('storage/' . $image) }}" alt="{{ $product->name }}" class="w-full max-h-[500px] object-cover rounded shadow">
+                                <div class="aspect-w-1 aspect-h-1 w-full">
+                                    <img src="{{ asset('storage/' . $image) }}" alt="{{ $product->name }}"
+                                         class="w-full h-full object-cover rounded shadow" />
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -21,7 +24,10 @@
                 </div>
             @else
                 <!-- Single image display -->
-                <img src="{{ asset('storage/' . ($productImages[0] ?? $product->image)) }}" alt="{{ $product->name }}" class="w-full max-h-[500px] object-cover rounded shadow">
+                <div class="aspect-w-1 aspect-h-1 w-full">
+                    <img src="{{ asset('storage/' . ($productImages[0] ?? $product->image)) }}" alt="{{ $product->name }}"
+                         class="w-full h-full object-cover rounded shadow" />
+                </div>
             @endif
         </div>
 
@@ -43,23 +49,38 @@
                 <div>
                     <p class="block text-sm font-medium text-gray-700 mb-1">Pilih Varian</p>
                     <input type="hidden" name="variant_id" id="selectedVariantId" required>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach($availableVariants as $variant)
-                            <button type="button"
-                                data-variant-id="{{ $variant['id'] }}"
-                                data-stock="{{ $variant['stock'] }}"
-                                class="variant-option px-3 py-1 rounded-full text-sm font-medium border {{ $variant['available'] ? 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200' : 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed line-through' }}"
-                                {{ !$variant['available'] ? 'disabled' : '' }}>
-                                {{ $variant['variant_1'] }}
-                                @if($variant['variant_2'])
-                                    / {{ $variant['variant_2'] }}
-                                @endif
-                                <span class="text-xs ml-1 text-gray-500">({{ $variant['stock'] }})</span>
-                            </button>
-                        @endforeach
+                    
+                    {{-- Variant 1 Selection --}}
+                    <div class="mb-4">
+                        <p class="text-sm font-medium text-gray-600 mb-2">Pilih Motif:</p>
+                        <div class="flex flex-wrap gap-2" id="variant1Container">
+                            @php
+                                $variant1Options = collect($availableVariants)->groupBy('variant_1');
+                            @endphp
+                            @foreach($variant1Options as $variant1Name => $variants)
+                                <button type="button"
+                                    data-variant1="{{ $variant1Name }}"
+                                    class="variant1-option px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all duration-200 bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50">
+                                    {{ $variant1Name }}
+                                </button>
+                            @endforeach
+                        </div>
                     </div>
+
+                    {{-- Variant 2 Selection --}}
+                    <div class="mb-4 hidden" id="variant2Container">
+                        <p class="text-sm font-medium text-gray-600 mb-2">Pilih Ukuran:</p>
+                        <div class="flex flex-wrap gap-2" id="variant2Options">
+                            {{-- Populated by JavaScript --}}
+                        </div>
+                    </div>
+
                     <p id="variantError" class="text-red-500 text-sm hidden mt-1">Pilih varian terlebih dahulu</p>
                 </div>
+
+                <script type="application/json" id="variantsData">
+                    @json($availableVariants)
+                </script>
             @else
                 <p class="text-sm text-gray-600">Stok: <strong>{{ $total_stock }}</strong></p>
             @endif
@@ -73,10 +94,13 @@
                     <div class="flex items-center gap-4">
                         <div class="flex items-center border border-gray-300 rounded">
                             <button type="button" class="px-3 py-1 decrement-btn">-</button>
-                            <input type="number" name="qty" value="1" min="1" max="{{ $total_stock }}" class="w-12 text-center border-x border-gray-300 py-1">
+                            <input type="number" name="qty" value="1" min="1" 
+                                   max="{{ $product->has_variants ? '' : $total_stock }}" 
+                                   class="w-12 text-center border-x border-gray-300 py-1"
+                                   id="quantityInput">
                             <button type="button" class="px-3 py-1 increment-btn">+</button>
                         </div>
-                        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+                        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" id="addToCartBtn">
                             Masukkan ke Keranjang
                         </button>
                     </div>
@@ -84,6 +108,9 @@
                     @if(session('error'))
                         <div class="text-red-500">{{ session('error') }}</div>
                     @endif
+                    <div id="stockError" class="text-red-500 text-sm hidden">
+                        Stok tidak mencukupi. Stok tersedia: <span id="availableStock"></span>
+                    </div>
                 </form>
             @else
                 <button onclick="openLoginModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
@@ -248,65 +275,172 @@
     @endif
 
     // Variant selection logic
-    const variantButtons = document.querySelectorAll('.variant-option');
+    const variant1Buttons = document.querySelectorAll('.variant1-option');
+    const variant2Container = document.getElementById('variant2Container');
+    const variant2Options = document.getElementById('variant2Options');
     const selectedVariantIdInput = document.getElementById('formVariantId');
     const variantError = document.getElementById('variantError');
+    const stockError = document.getElementById('stockError');
+    const quantityInput = document.getElementById('quantityInput');
+    const addToCartBtn = document.getElementById('addToCartBtn');
+    const variantsData = JSON.parse(document.getElementById('variantsData').textContent);
 
-    variantButtons.forEach(button => {
+    let selectedVariant = null;
+
+    // Variant 1 selection
+    variant1Buttons.forEach(button => {
         button.addEventListener('click', () => {
-            if (button.disabled) return;
-            
-            // Remove active class from all buttons
-            variantButtons.forEach(b => {
-                b.classList.remove('border-blue-600', 'bg-blue-300');
-                b.classList.add('border-blue-300', 'bg-blue-100');
+            variant1Buttons.forEach(b => {
+                b.classList.remove('border-blue-500', 'bg-blue-100', 'text-blue-700');
+                b.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
             });
             
-            // Add active class to clicked button
-            button.classList.remove('border-blue-300', 'bg-blue-100');
-            button.classList.add('border-blue-600', 'bg-blue-300');
+            button.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
+            button.classList.add('border-blue-500', 'bg-blue-100', 'text-blue-700');
             
-            // Update hidden input value
-            selectedVariantIdInput.value = button.dataset.variantId;
+            const selectedVariant1 = button.dataset.variant1;
+            showVariant2Options(selectedVariant1);
             
-            // Update max quantity based on variant stock
-            const qtyInput = document.querySelector('input[name="qty"]');
-            qtyInput.max = button.dataset.stock;
-            
-            // Hide error if shown
+            selectedVariant = null;
+            selectedVariantIdInput.value = '';
             variantError.classList.add('hidden');
+            stockError.classList.add('hidden');
+            addToCartBtn.disabled = true;
+            quantityInput.value = 1;
         });
     });
 
-    // Cart form validation
+    function showVariant2Options(variant1Name) {
+        const filteredVariants = variantsData.filter(variant => variant.variant_1 === variant1Name && variant.stock > 0);
+        
+        variant2Options.innerHTML = '';
+        
+        if (filteredVariants.length === 0) {
+            variant2Options.innerHTML = '<p class="text-sm text-gray-500">Tidak ada varian yang tersedia</p>';
+            addToCartBtn.disabled = true;
+            return;
+        }
+
+        filteredVariants.forEach(variant => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.dataset.variantId = variant.id;
+            button.dataset.stock = variant.stock;
+            button.dataset.variant2 = variant.variant_2;
+            
+            button.className = 'variant2-option px-4 py-3 rounded-lg text-sm font-medium border-2 transition-all duration-200 bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50';
+            
+            button.innerHTML = `
+                <div class="text-center">
+                    <div class="font-semibold text-base">
+                        ${variant.variant_2}
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1 border-t border-gray-200 pt-1">
+                        Stok: ${variant.stock}
+                    </div>
+                </div>
+            `;
+            
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.variant2-option').forEach(b => {
+                    b.classList.remove('border-green-500', 'bg-green-100', 'text-green-700');
+                    b.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+                });
+                
+                button.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
+                button.classList.add('border-green-500', 'bg-green-100', 'text-green-700');
+                
+                selectedVariant = variant;
+                selectedVariantIdInput.value = variant.id;
+                
+                // Update quantity input
+                quantityInput.max = variant.stock;
+                quantityInput.value = 1;
+                document.getElementById('availableStock').textContent = variant.stock;
+                
+                variantError.classList.add('hidden');
+                stockError.classList.add('hidden');
+                addToCartBtn.disabled = false;
+            });
+            
+            variant2Options.appendChild(button);
+        });
+        
+        variant2Container.classList.remove('hidden');
+    }
+
+    // Quantity input handling
+    document.querySelectorAll('.increment-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const max = selectedVariant ? selectedVariant.stock : parseInt('{{ $total_stock }}');
+            const val = parseInt(quantityInput.value) || 1;
+            if (val < max) {
+                quantityInput.value = val + 1;
+                stockError.classList.add('hidden');
+            } else {
+                stockError.innerHTML = `Stok tidak mencukupi. Stok tersedia: ${max}`;
+                stockError.classList.remove('hidden');
+            }
+        });
+    });
+
+    document.querySelectorAll('.decrement-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const val = parseInt(quantityInput.value) || 1;
+            if (val > 1) {
+                quantityInput.value = val - 1;
+                stockError.classList.add('hidden');
+            }
+        });
+    });
+
+    // Real-time quantity validation
+    quantityInput.addEventListener('change', () => {
+        const max = selectedVariant ? selectedVariant.stock : parseInt('{{ $total_stock }}');
+        const val = parseInt(quantityInput.value) || 1;
+        
+        if (val > max) {
+            quantityInput.value = max;
+            stockError.innerHTML = `Stok tidak mencukupi. Stok tersedia: ${max}`;
+            stockError.classList.remove('hidden');
+        } else if (val < 1) {
+            quantityInput.value = 1;
+        } else {
+            stockError.classList.add('hidden');
+        }
+    });
+
+    // Form submission validation
     const cartForm = document.getElementById('cartForm');
     cartForm.addEventListener('submit', e => {
-        if (selectedVariantIdInput && !selectedVariantIdInput.value && variantButtons.length > 0) {
+        if (variantsData.length > 0 && !selectedVariantIdInput.value) {
             e.preventDefault();
             variantError.classList.remove('hidden');
             window.scrollTo({
                 top: variantError.offsetTop - 100,
                 behavior: 'smooth'
             });
+            return;
         }
-    });
-
-    // Quantity increment/decrement buttons
-    document.querySelectorAll('.increment-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            const input = button.previousElementSibling;
-            let max = parseInt(input.max) || 100;
-            let val = parseInt(input.value) || 1;
-            if (val < max) input.value = val + 1;
-        });
-    });
-
-    document.querySelectorAll('.decrement-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            const input = button.nextElementSibling;
-            let val = parseInt(input.value) || 1;
-            if (val > 1) input.value = val - 1;
-        });
+        
+        let maxStock;
+        if (selectedVariant) {
+            maxStock = selectedVariant.stock;
+        } else {
+            maxStock = parseInt('{{ $total_stock }}') || 0;
+        }
+        
+        const requestedQty = parseInt(quantityInput.value) || 0;
+        
+        if (requestedQty > maxStock) {
+            e.preventDefault();
+            stockError.innerHTML = `Stok tidak mencukupi. Stok tersedia: ${maxStock}`;
+            stockError.classList.remove('hidden');
+            window.scrollTo({
+                top: stockError.offsetTop - 100,
+                behavior: 'smooth'
+            });
+        }
     });
 
     // Login modal functions
@@ -325,18 +459,48 @@
 <style>
     .swiper {
         width: 100%;
-        height: 500px;
+        aspect-ratio: 1/1;
     }
     .swiper-slide {
         display: flex;
         justify-content: center;
         align-items: center;
     }
-    .swiper-slide img {
-        display: block;
+    
+    .aspect-w-1 {
+        position: relative;
         width: 100%;
-        height: 100%;
-        object-fit: cover;
+    }
+    .aspect-w-1::before {
+        content: '';
+        display: block;
+        padding-bottom: 100%;
+    }
+    .aspect-h-1 {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+    
+    #stockError {
+        margin-top: 0.5rem;
+    }
+    
+    button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    
+    .variant-option {
+        min-width: 90px;
+        min-height: 75px;
+    }
+    
+    .variant-option:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 </style>
 @endsection

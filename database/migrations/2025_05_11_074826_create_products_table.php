@@ -11,17 +11,17 @@ class CreateProductsTable extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->foreignId('category_id')->constrained()->onDelete('cascade');
-            $table->decimal('price', 12, 2)->nullable(); // Nullable untuk produk dengan varian
-            $table->text('description')->nullable();
-            $table->json('images')->nullable();
-            $table->boolean('has_variants')->default(false);
-            $table->decimal('weight', 8, 2)->nullable();
-            $table->decimal('length', 8, 2)->nullable();
-            $table->decimal('width', 8, 2)->nullable();
-            $table->decimal('height', 8, 2)->nullable();
-            $table->integer('stock')->default(0)->nullable(); // Nullable untuk produk dengan varian
-            $table->json('variant_data')->nullable(); // Untuk menyimpan nama varian dan opsi
+            $table->text('description');
+            $table->foreignId('category_id')->constrained()->cascadeOnDelete(); // pastikan ada tabel categories
+            $table->boolean('use_variant')->default(false); // aktifkan varian?
+            $table->string('variant_name_1')->nullable(); // contoh: Warna
+            $table->string('variant_name_2')->nullable(); // contoh: Ukuran
+            $table->integer('price')->nullable(); // jika tidak pakai varian
+            $table->integer('stock')->nullable(); // jika tidak pakai varian
+            $table->float('weight')->nullable(); // gram
+            $table->float('length')->nullable();
+            $table->float('width')->nullable();
+            $table->float('height')->nullable();
             $table->timestamps();
         });
     

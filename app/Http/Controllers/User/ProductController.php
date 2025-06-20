@@ -152,9 +152,6 @@ class ProductController extends Controller
         ));
     }
 
-    /**
-     * Get product variants via AJAX
-     */
     public function getVariants(Product $product)
     {
         if (!$product->has_variants) {
@@ -183,9 +180,6 @@ class ProductController extends Controller
         ]);
     }
 
-    /**
-     * Get product details for AJAX requests
-     */
     public function getProductDetails(Product $product)
     {
         $product->load(['variants', 'reviews']);
@@ -219,9 +213,6 @@ class ProductController extends Controller
         return response()->json($data);
     }
 
-    /**
-     * Search products with AJAX
-     */
     public function search(Request $request)
     {
         $query = $request->get('q', '');
@@ -257,9 +248,6 @@ class ProductController extends Controller
         return response()->json($products);
     }
 
-    /**
-     * Filter products by category
-     */
     public function byCategory(Category $category)
     {
         $products = Product::where('category_id', $category->id)

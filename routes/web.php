@@ -89,8 +89,8 @@ Route::middleware('auth')->group(function () {
 
         // Di dalam group user
 Route::prefix('products/{product}/reviews')->name('products.reviews.')->group(function () {
-    Route::get('/', [ReviewController::class, 'index'])->name('index');
-    Route::post('/', [ReviewController::class, 'store'])->name('store');
+    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 });
 
         // Cart Routes (Keranjang)

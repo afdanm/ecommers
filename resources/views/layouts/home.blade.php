@@ -17,15 +17,7 @@
 </head>
 
 <body class="font-sans bg-gray-50 antialiased">
-    <!-- Loading Animation -->
-    <div id="loading" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="relative w-24 h-24 mb-4">
-            <div class="absolute inset-0 border-4 border-t-amber-500 border-r-amber-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
-            <div class="absolute inset-2 border-4 border-t-transparent border-r-transparent border-b-amber-500 border-l-amber-500 rounded-full animate-spin-reverse"></div>
-        </div>
-        <p class="text-gray-700 font-medium">TokoKu</p>
-    </div>
-
+   
     <!-- Navbar -->
     <nav class="bg-white shadow-sm py-4 sticky top-0 z-40 transition-all duration-300" id="navbar">
         <div class="container mx-auto px-4 flex justify-between items-center">
@@ -207,16 +199,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
-        // Loading animation
-        window.addEventListener('load', function() {
-            const loading = document.getElementById('loading');
-            setTimeout(() => {
-                loading.classList.add('opacity-0');
-                setTimeout(() => {
-                    loading.style.display = 'none';
-                }, 500);
-            }, 800);
-        });
+        
 
         // Mobile menu toggle
         const mobileMenuButton = document.getElementById('mobile-menu-button');
